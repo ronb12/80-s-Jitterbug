@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Bookings: anyone can create (submit form); allow read/update for admin use (restrict later with Auth)
+    match /bookings/{bookingId} {
+      allow create: if true;
+      allow read, update, delete: if true;
+      // When you add Firebase Auth, restrict to admins only, e.g.:
+      // allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
