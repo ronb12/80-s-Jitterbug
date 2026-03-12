@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { getPackages, setPackages, type PackagePrice } from "@/lib/packages-service";
-import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession } from "@/lib/admin-auth";
-
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession, isAdminConfigured, validateAdminCredentials } from "@/lib/admin-auth";
 
 export default function AdminPackagesPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -26,9 +23,7 @@ export default function AdminPackagesPage() {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL;
-    const passwordMatch = password.trim() === ADMIN_PASSWORD;
-    if (emailMatch && passwordMatch && ADMIN_EMAIL && ADMIN_PASSWORD) {
+    if (validateAdminCredentials(email, password)) {
       setAdminAuthenticated();
       setAuthenticated(true);
       setPasswordError(false);
@@ -71,11 +66,11 @@ export default function AdminPackagesPage() {
     }
   };
 
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  if (!isAdminConfigured()) {
     return (
       <div className="min-h-screen px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-md rounded-2xl border border-amber-500/50 bg-black/50 p-8 text-center">
-          <p className="text-amber-400">Admin not configured. Set NEXT_PUBLIC_ADMIN_EMAIL and NEXT_PUBLIC_ADMIN_PASSWORD in .env.local.</p>
+          <p className="text-amber-400">Admin not configured. Set NEXT_PUBLIC_ADMIN_EMAIL and NEXT_PUBLIC_ADMIN_PASSWORD (and optionally NEXT_PUBLIC_ADMIN_EMAIL_2, NEXT_PUBLIC_ADMIN_PASSWORD_2) in .env.local.</p>
           <Link href="/" className="mt-6 inline-block text-[var(--pink)] hover:underline">Back to site</Link>
         </div>
       </div>

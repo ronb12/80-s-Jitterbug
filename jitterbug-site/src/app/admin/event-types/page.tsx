@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { getEventTypes, setEventTypes } from "@/lib/event-types-service";
-import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession } from "@/lib/admin-auth";
-
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession, isAdminConfigured, validateAdminCredentials } from "@/lib/admin-auth";
 
 export default function AdminEventTypesPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -26,9 +23,7 @@ export default function AdminEventTypesPage() {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL;
-    const passwordMatch = password.trim() === ADMIN_PASSWORD;
-    if (emailMatch && passwordMatch && ADMIN_EMAIL && ADMIN_PASSWORD) {
+    if (validateAdminCredentials(email, password)) {
       setAdminAuthenticated();
       setAuthenticated(true);
       setPasswordError(false);
@@ -87,7 +82,7 @@ export default function AdminEventTypesPage() {
     }
   };
 
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  if (!isAdminConfigured()) {
     return (
       <div className="min-h-screen px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-md rounded-2xl border border-amber-500/50 bg-black/50 p-8 text-center">

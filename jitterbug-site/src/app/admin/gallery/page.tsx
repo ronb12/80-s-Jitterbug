@@ -10,10 +10,7 @@ import {
   deleteGalleryPhoto,
   type GalleryPhoto,
 } from "@/lib/gallery-service";
-import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession } from "@/lib/admin-auth";
-
-const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession, isAdminConfigured, validateAdminCredentials } from "@/lib/admin-auth";
 
 export default function AdminGalleryPage() {
   const [authenticated, setAuthenticated] = useState(false);
@@ -38,12 +35,7 @@ export default function AdminGalleryPage() {
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      email.trim().toLowerCase() === ADMIN_EMAIL &&
-      password.trim() === ADMIN_PASSWORD &&
-      ADMIN_EMAIL &&
-      ADMIN_PASSWORD
-    ) {
+    if (validateAdminCredentials(email, password)) {
       setAdminAuthenticated();
       setAuthenticated(true);
       setPasswordError(false);
@@ -122,7 +114,7 @@ export default function AdminGalleryPage() {
     }
   };
 
-  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  if (!isAdminConfigured()) {
     return (
       <div className="min-h-screen px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-md rounded-2xl border border-amber-500/50 bg-black/50 p-8 text-center">
