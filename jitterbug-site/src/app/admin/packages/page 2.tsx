@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { getPackages, setPackages, type PackagePrice } from "@/lib/packages-service";
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession } from "@/lib/admin-auth";
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
@@ -13,6 +14,10 @@ export default function AdminPackagesPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
+
+  useEffect(() => {
+    if (isAdminAuthenticated()) setAuthenticated(true);
+  }, []);
   const [packages, setPackagesState] = useState<PackagePrice[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,6 +29,7 @@ export default function AdminPackagesPage() {
     const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL;
     const passwordMatch = password.trim() === ADMIN_PASSWORD;
     if (emailMatch && passwordMatch && ADMIN_EMAIL && ADMIN_PASSWORD) {
+      setAdminAuthenticated();
       setAuthenticated(true);
       setPasswordError(false);
     } else {
@@ -125,6 +131,7 @@ export default function AdminPackagesPage() {
             <Link href="/admin/bookings" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">Bookings</Link>
             <Link href="/admin/event-types" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">Event types</Link>
             <Link href="/admin/gallery" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">Gallery</Link>
+            <button type="button" onClick={() => { clearAdminSession(); setAuthenticated(false); }} className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-400 hover:text-white">Log out</button>
             <Link href="/" className="text-sm text-zinc-400 hover:text-white">← Back to site</Link>
           </div>
         </div>

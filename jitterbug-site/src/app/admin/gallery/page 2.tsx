@@ -10,6 +10,7 @@ import {
   deleteGalleryPhoto,
   type GalleryPhoto,
 } from "@/lib/gallery-service";
+import { isAdminAuthenticated, setAdminAuthenticated, clearAdminSession } from "@/lib/admin-auth";
 
 const ADMIN_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
@@ -19,6 +20,11 @@ export default function AdminGalleryPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState(false);
+
+  useEffect(() => {
+    if (isAdminAuthenticated()) setAuthenticated(true);
+  }, []);
+
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +44,7 @@ export default function AdminGalleryPage() {
       ADMIN_EMAIL &&
       ADMIN_PASSWORD
     ) {
+      setAdminAuthenticated();
       setAuthenticated(true);
       setPasswordError(false);
     } else {
@@ -172,6 +179,7 @@ export default function AdminGalleryPage() {
             <Link href="/admin/packages" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">Packages</Link>
             <Link href="/admin/event-types" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">Event types</Link>
             <Link href="/gallery" target="_blank" rel="noopener noreferrer" className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">View gallery</Link>
+            <button type="button" onClick={() => { clearAdminSession(); setAuthenticated(false); }} className="rounded-full border border-zinc-600 px-4 py-2 text-sm text-zinc-400 hover:text-white">Log out</button>
             <Link href="/" className="text-sm text-zinc-400 hover:text-white">← Back to site</Link>
           </div>
         </div>
