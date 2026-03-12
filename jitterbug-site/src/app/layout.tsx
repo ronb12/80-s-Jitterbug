@@ -3,7 +3,6 @@ import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import FloatingBookNow from "@/components/FloatingBookNow";
 import FirebaseInit from "@/components/FirebaseInit";
 
 const dmSans = DM_Sans({
@@ -48,7 +47,6 @@ export default function RootLayout({
         <Navigation />
         <main>{children}</main>
         <Footer />
-        <FloatingBookNow />
       </body>
     </html>
   );

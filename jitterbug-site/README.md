@@ -1,92 +1,100 @@
-# 80's Jitterbug Photo Booth — Website
+# 80's Jitterbug Photo Booth
 
-A modern, responsive website for **80's Jitterbug** photo booth rentals. Built with Next.js, React, Tailwind CSS, and Framer Motion.
+A modern marketing and booking website for **80's Jitterbug** retro photo booth rentals. Built with Next.js, React, Tailwind CSS, and Firebase.
 
-## Run locally
+---
+
+## Overview
+
+- **Live site:** [https://jitterbug80s.web.app](https://jitterbug80s.web.app)
+- **Stack:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, Firebase (Firestore, Analytics, Hosting)
+- **Features:** Public pages (Home, About, Packages, Gallery, Booking, Contact), booking form with Firestore, owner admin (bookings, packages, event types, gallery), session-persistent admin login
+
+---
+
+## Quick Start
 
 ```bash
-cd jitterbug-site
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Build for production
+---
+
+## Scripts
+
+| Command | Description |
+|--------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build (output in `out/` for static export) |
+| `npm start` | Serve production build locally |
+
+---
+
+## Environment
+
+Copy `.env.example` to `.env.local` and fill in:
+
+- **Firebase:** `NEXT_PUBLIC_FIREBASE_*` (from [Firebase Console](https://console.firebase.google.com/project/jitterbug80s/settings/general) → Your apps)
+- **Admin:** `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_PASSWORD` (required for `/admin/*`)
+- **Optional second admin:** `NEXT_PUBLIC_ADMIN_EMAIL_2`, `NEXT_PUBLIC_ADMIN_PASSWORD_2`
+- **Site URL:** `NEXT_PUBLIC_SITE_URL` (e.g. `https://80sjitterbug.com` for canonical and Open Graph)
+- **Contact (shown on Contact, Privacy, Terms):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE` (e.g. `you@example.com`, `(555) 123-4567`)
+
+---
+
+## Deployment (Firebase)
+
+Project ID: **jitterbug80s**.
 
 ```bash
 npm run build
-npm start
+firebase deploy --only hosting
+firebase deploy --only firestore   # when rules change
 ```
 
-## Deploy to Firebase Hosting
+Custom domain: Add the domain in [Firebase Hosting](https://console.firebase.google.com/project/jitterbug80s/hosting), then set `NEXT_PUBLIC_SITE_URL` and redeploy.
 
-The site uses project **jitterbug80s** (name: **80s Jitterbug**) so the live URL is **https://jitterbug80s.web.app**.
+---
 
-**One-time setup:** Add your Firebase config to the new project:
+## Project Structure
 
-1. Open [Firebase Console → jitterbug80s](https://console.firebase.google.com/project/jitterbug80s/overview).
-2. Enable **Firestore** (Build → Firestore → Create database) and **Hosting** (Build → Hosting → Get started).
-3. Add a **Web app** (</>) in Project settings → Your apps, then copy the `firebaseConfig`.
-4. Put the config in **`.env.local`** using the same variable names as in `.env.example` (all `NEXT_PUBLIC_FIREBASE_*` and admin vars).
-
-Then deploy:
-
-```bash
-cd jitterbug-site
-npm run build
-npx firebase-tools deploy --only hosting
-npx firebase-tools deploy --only firestore
+```
+src/
+├── app/                    # App Router routes
+│   ├── admin/              # Owner-only: bookings, packages, event-types, gallery
+│   ├── about, booking, contact, gallery, packages
+│   ├── privacy, terms
+│   └── layout.tsx, globals.css
+├── components/             # Navigation, Footer, FloatingBookNow, NeonButton
+└── lib/                    # Firebase, booking, packages, event-types, gallery, admin-auth
 ```
 
-Live site: **https://jitterbug80s.web.app** (or **https://80sjitterbug.com** once you add a custom domain).
-
-**URL that says "80s Jitterbug":** The app is set to use **https://80sjitterbug.com** for canonical and sharing. To make that the real URL: (1) Register **80sjitterbug.com** with a domain provider. (2) In [Firebase Console → Hosting](https://console.firebase.google.com/project/jitterbug80s/hosting), click **Add custom domain**, enter **80sjitterbug.com**, and follow the DNS steps. (3) Set `NEXT_PUBLIC_SITE_URL=https://80sjitterbug.com` in `.env.local`, rebuild and deploy. Then your live URL will be **https://80sjitterbug.com**.
-
-**Delete duplicate projects:** See [DELETE-DUPLICATE-PROJECTS.md](DELETE-DUPLICATE-PROJECTS.md) for links and steps to remove **fir-jitterbug** and **jitterbug-80s** (keep **jitterbug80s**). The CLI cannot delete projects; use the Firebase Console.
-
-## Project structure
-
-- **`src/app/`** — App Router pages (Home, About, Packages, Gallery, Booking, Contact)
-- **`src/components/`** — Reusable UI (Navigation, Footer, FloatingBookNow, NeonButton)
-- **`src/app/globals.css`** — Global styles and 80s theme (neon colors, grid, utilities)
+---
 
 ## Features
 
-- **Mobile-first** responsive layout
-- **Sticky navigation** with mobile menu
-- **Floating “Book Now”** button
-- **Full booking service**: form submits to Firebase Firestore, booking reference (e.g. JB-1234) shown on success
-- **Admin bookings page** at `/admin/bookings` — view and update status (pending / confirmed / declined / cancelled). Set `NEXT_PUBLIC_ADMIN_EMAIL` and `NEXT_PUBLIC_ADMIN_PASSWORD` in `.env.local` and sign in to access.
-- **Booking form** validation (name, email, phone, event type/date/location, package, message)
-- **Per-page SEO** via `layout.tsx` metadata
-- **Neon 80s theme** (pink, blue, purple, black) with retro grid and glow effects
+- **Public site:** Home, About, Packages, Gallery, Booking, Contact; Privacy and Terms.
+- **Booking:** Form submits to Firestore; customer sees a booking reference (e.g. JB-1234). No email sending (optional future enhancement).
+- **Admin (session-persistent):**
+  - **Bookings** — List, filter, search, update status, add/edit/delete, export CSV, copy ref, email link.
+  - **Packages** — Edit package names and prices (stored in Firestore; used on Packages page and booking form).
+  - **Event types** — Add/edit/remove event types (e.g. Wedding, Birthday) used in the booking form.
+  - **Gallery** — Add photos by image URL (no Firebase Storage required); edit captions, delete.
+- **Theme:** Neon 80s (pink/black), DM Sans, sticky nav, floating “Book Now.”
 
-## Adding real images
+---
 
-Place photo booth images in `public/` (e.g. `public/gallery/1.jpg`). Use the Next.js `Image` component for optimized loading:
+## Firestore
 
-```tsx
-import Image from "next/image";
-<Image src="/gallery/1.jpg" alt="..." width={400} height={300} />
-```
+- **Collections:** `bookings`, `settings` (e.g. `settings/packages`, `settings/eventTypes`, `settings/gallery`).
+- **Rules:** See `firestore.rules`. Deploy with `firebase deploy --only firestore`.
+- **Indexes:** Create any composite indexes suggested in the browser console when loading admin lists.
 
-## Booking service & Firestore
+---
 
-1. **Firestore**: Bookings are stored in the `bookings` collection. Deploy rules from the project root:
-   ```bash
-   firebase deploy --only firestore:rules
-   ```
-   Rules are in `firestore.rules` (create + read/update for bookings). Tighten with Firebase Auth when you add admin login.
+## License & Support
 
-2. **Index**: The first time you load the admin bookings list, Firestore may ask for a composite index (e.g. `bookings` collection, `createdAt` descending). Use the link in the browser console to create it in the Firebase Console.
-
-3. **Admin**: Set `NEXT_PUBLIC_ADMIN_EMAIL` and `NEXT_PUBLIC_ADMIN_PASSWORD` in `.env.local`, then open `/admin/bookings` and sign in to view and manage bookings.
-
-## Tech stack
-
-- Next.js 16 (App Router)
-- React 19
-- Tailwind CSS 4
-- Framer Motion
-- Firebase (Analytics, Firestore)
+Proprietary. For questions or custom domain setup, see the contact details on the live site.

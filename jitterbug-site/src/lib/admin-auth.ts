@@ -17,7 +17,7 @@ export function isAdminConfigured(): boolean {
 export function validateAdminCredentials(email: string, password: string): boolean {
   const e = email.trim().toLowerCase();
   const p = password.trim();
-  return (
+  return Boolean(
     (ADMIN_1_EMAIL && e === ADMIN_1_EMAIL && p === ADMIN_1_PASSWORD) ||
     (ADMIN_2_EMAIL && e === ADMIN_2_EMAIL && p === ADMIN_2_PASSWORD)
   );
