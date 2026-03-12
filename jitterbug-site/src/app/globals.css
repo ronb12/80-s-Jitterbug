@@ -1,23 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #f0f0f5;
-  --neon-pink: #ff2a6d;
-  --neon-pink-glow: rgba(255, 42, 109, 0.6);
-  --electric-blue: #05d9e8;
-  --electric-blue-glow: rgba(5, 217, 232, 0.6);
-  --purple: #d300c5;
-  --purple-glow: rgba(211, 0, 197, 0.5);
-  --yellow: #f9f002;
-  --grid-color: rgba(5, 217, 232, 0.15);
+  --background: #0c0c0c;
+  --foreground: #fafafa;
+  --pink: #ec4899;
+  --pink-hover: #f472b6;
+  --pink-muted: rgba(236, 72, 153, 0.15);
+  --pink-glow: rgba(236, 72, 153, 0.4);
+  --border: rgba(255, 255, 255, 0.08);
+  --card: rgba(255, 255, 255, 0.03);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-orbitron), system-ui, sans-serif;
-  --font-display: var(--font-orbitron);
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-display: var(--font-dm-sans);
 }
 
 body {
@@ -26,43 +24,25 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Retro grid background */
+/* Subtle grid - modern */
 .retro-grid {
   background-image:
-    linear-gradient(var(--grid-color) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-  background-size: 40px 40px;
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-/* Neon text glow */
-.neon-text-pink {
-  text-shadow: 0 0 10px var(--neon-pink-glow), 0 0 20px var(--neon-pink-glow), 0 0 40px var(--neon-pink-glow);
+/* Accent text */
+.text-accent {
+  color: var(--pink);
 }
 
-.neon-text-blue {
-  text-shadow: 0 0 10px var(--electric-blue-glow), 0 0 20px var(--electric-blue-glow), 0 0 40px var(--electric-blue-glow);
+/* Focus */
+*:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
 }
 
-.neon-text-purple {
-  text-shadow: 0 0 10px var(--purple-glow), 0 0 20px var(--purple-glow);
-}
-
-/* Neon border/box */
-.neon-border-pink {
-  box-shadow: 0 0 15px var(--neon-pink-glow), inset 0 0 15px rgba(255, 42, 109, 0.1);
-}
-
-.neon-border-blue {
-  box-shadow: 0 0 15px var(--electric-blue-glow), inset 0 0 15px rgba(5, 217, 232, 0.1);
-}
-
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
-}
-
-/* Focus styles for accessibility */
-*:focus-visible {
-  outline: 2px solid var(--electric-blue);
-  outline-offset: 2px;
 }

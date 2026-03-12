@@ -13,7 +13,7 @@ export default function FloatingBookNow() {
     >
       <Link
         href="/booking"
-        className="flex items-center gap-2 rounded-full bg-[var(--neon-pink)] px-6 py-4 font-bold text-white shadow-[0_0_25px_var(--neon-pink-glow)] transition-all hover:scale-105 hover:shadow-[0_0_35px_var(--neon-pink-glow)]"
+        className="flex items-center gap-2 rounded-full bg-[var(--pink)] px-6 py-4 font-semibold text-white shadow-lg transition-all hover:scale-105 hover:bg-[var(--pink-hover)]"
       >
         <span>Book Now</span>
         <span className="text-xl">✨</span>

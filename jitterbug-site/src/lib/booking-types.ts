@@ -8,6 +8,7 @@ export interface Booking {
   eventType: string;
   eventDate: string;
   eventLocation: string;
+  eventAddress: string;
   package: string;
   message: string;
   status: BookingStatus;
@@ -23,6 +24,7 @@ export interface BookingFormData {
   eventType: string;
   eventDate: string;
   eventLocation: string;
+  eventAddress: string;
   package: string;
   message: string;
 }

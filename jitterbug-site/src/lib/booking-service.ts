@@ -8,6 +8,7 @@ import {
   orderBy,
   doc,
   updateDoc,
+  deleteDoc,
   serverTimestamp,
   type DocumentData,
   type QuerySnapshot,
@@ -34,6 +35,7 @@ function snapshotToBookings(snap: QuerySnapshot<DocumentData>): Booking[] {
       eventType: data.eventType ?? "",
       eventDate: data.eventDate ?? "",
       eventLocation: data.eventLocation ?? "",
+      eventAddress: data.eventAddress ?? "",
       package: data.package ?? "",
       message: data.message ?? "",
       status: (data.status as BookingStatus) ?? "pending",
@@ -57,6 +59,7 @@ export async function submitBooking(form: BookingFormData): Promise<{ bookingRef
     eventType: form.eventType,
     eventDate: form.eventDate,
     eventLocation: form.eventLocation.trim(),
+    eventAddress: (form.eventAddress ?? "").trim(),
     package: form.package,
     message: (form.message ?? "").trim(),
     status: "pending",
@@ -89,4 +92,32 @@ export async function updateBookingStatus(
     status,
     updatedAt: serverTimestamp(),
   });
+}
+
+export type BookingUpdateData = Partial<BookingFormData> & { status?: BookingStatus };
+
+export async function updateBooking(
+  bookingId: string,
+  data: BookingUpdateData
+): Promise<void> {
+  if (!db) throw new Error("Firebase not configured");
+
+  const update: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  if (data.name !== undefined) update.name = data.name.trim();
+  if (data.email !== undefined) update.email = data.email.trim();
+  if (data.phone !== undefined) update.phone = data.phone.trim();
+  if (data.eventType !== undefined) update.eventType = data.eventType;
+  if (data.eventDate !== undefined) update.eventDate = data.eventDate;
+  if (data.eventLocation !== undefined) update.eventLocation = data.eventLocation.trim();
+  if (data.eventAddress !== undefined) update.eventAddress = data.eventAddress.trim();
+  if (data.package !== undefined) update.package = data.package;
+  if (data.message !== undefined) update.message = data.message.trim();
+  if (data.status !== undefined) update.status = data.status;
+
+  await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), update);
+}
+
+export async function deleteBooking(bookingId: string): Promise<void> {
+  if (!db) throw new Error("Firebase not configured");
+  await deleteDoc(doc(db, BOOKINGS_COLLECTION, bookingId));
 }

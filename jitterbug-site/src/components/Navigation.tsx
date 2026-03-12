@@ -17,11 +17,11 @@ export default function Navigation() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-[var(--electric-blue)]/30 bg-[var(--background)]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 w-full border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link
           href="/"
-          className="text-xl font-bold tracking-wider text-[var(--electric-blue)] transition-all hover:text-[var(--neon-pink)] hover:drop-shadow-[0_0_8px_var(--neon-pink-glow)] sm:text-2xl"
+          className="text-xl font-bold tracking-tight text-[var(--pink)] transition-colors hover:opacity-90 sm:text-2xl"
         >
           80&apos;s Jitterbug
         </Link>
@@ -32,7 +32,7 @@ export default function Navigation() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm font-medium text-zinc-300 transition-colors hover:text-[var(--neon-pink)]"
+                className="text-sm font-medium text-zinc-400 transition-colors hover:text-[var(--pink)]"
               >
                 {link.label}
               </Link>
@@ -41,7 +41,7 @@ export default function Navigation() {
           <li>
             <Link
               href="/booking"
-              className="rounded-full bg-[var(--neon-pink)] px-5 py-2.5 text-sm font-bold text-white transition-all hover:shadow-[0_0_20px_var(--neon-pink-glow)]"
+              className="rounded-full bg-[var(--pink)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--pink-hover)]"
             >
               Book Now
             </Link>
@@ -51,7 +51,7 @@ export default function Navigation() {
         {/* Mobile menu button */}
         <button
           type="button"
-          className="flex flex-col gap-1.5 rounded p-2 text-[var(--electric-blue)] md:hidden"
+          className="flex flex-col gap-1.5 rounded p-2 text-white md:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
@@ -69,14 +69,14 @@ export default function Navigation() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-[var(--electric-blue)]/20 bg-[var(--background)] md:hidden"
+            className="overflow-hidden border-t border-[var(--border)] bg-[var(--background)] md:hidden"
           >
             <ul className="flex flex-col gap-1 px-4 py-4">
               {navLinks.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="block rounded-lg px-4 py-3 text-zinc-300 hover:bg-white/5 hover:text-[var(--neon-pink)]"
+                    className="block rounded-lg px-4 py-3 text-zinc-400 hover:bg-[var(--card)] hover:text-[var(--pink)]"
                     onClick={() => setMobileOpen(false)}
                   >
                     {link.label}
@@ -86,7 +86,7 @@ export default function Navigation() {
               <li className="pt-2">
                 <Link
                   href="/booking"
-                  className="block rounded-full bg-[var(--neon-pink)] px-5 py-3 text-center font-bold text-white"
+                  className="block rounded-full bg-[var(--pink)] px-5 py-3 text-center font-semibold text-white"
                   onClick={() => setMobileOpen(false)}
                 >
                   Book Now

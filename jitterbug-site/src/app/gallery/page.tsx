@@ -1,18 +1,18 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-
-const images = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 1,
-  alt: `Photo booth moment ${i + 1}`,
-  gradient: [
-    "from-[var(--neon-pink)]/40 to-[var(--purple)]/40",
-    "from-[var(--electric-blue)]/40 to-[var(--neon-pink)]/40",
-    "from-[var(--purple)]/40 to-[var(--electric-blue)]/40",
-  ][i % 3],
-}));
+import Link from "next/link";
+import { listGalleryPhotos, type GalleryPhoto } from "@/lib/gallery-service";
 
 export default function GalleryPage() {
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    listGalleryPhotos().then(setPhotos).finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="min-h-screen">
       <section className="retro-grid relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8">
@@ -22,7 +22,7 @@ export default function GalleryPage() {
           animate={{ opacity: 1, y: 0 }}
           className="relative mx-auto max-w-4xl text-center"
         >
-          <h1 className="text-4xl font-bold text-[var(--neon-pink)] neon-text-pink sm:text-5xl">
+          <h1 className="text-4xl font-bold text-[var(--pink)] sm:text-5xl">
             Gallery
           </h1>
           <p className="mt-6 text-lg text-zinc-300">
@@ -31,38 +31,65 @@ export default function GalleryPage() {
         </motion.div>
       </section>
 
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+      <section className="py-16 px-4 sm:px-6 lg:px-8">
+        {loading && (
+          <p className="text-center text-zinc-500">Loading gallery…</p>
+        )}
+        {!loading && photos.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mx-auto max-w-xl rounded-2xl border border-[var(--pink)]/30 bg-black/40 p-10 text-center"
+          >
+            <span className="text-5xl" aria-hidden>📸</span>
+            <h2 className="mt-4 text-xl font-bold text-white">Coming soon</h2>
+            <p className="mt-3 text-zinc-400">
+              We&apos;re just getting started! Photos from our events will appear here soon. Book us for your next party and you could be in our first gallery.
+            </p>
+            <Link
+              href="/booking"
+              className="mt-8 inline-block rounded-full bg-[var(--pink)] px-8 py-3 font-semibold text-white transition-colors hover:bg-[var(--pink-hover)]"
+            >
+              Request a booking
+            </Link>
+          </motion.div>
+        )}
+        {!loading && photos.length > 0 && (
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
+            animate="visible"
             variants={{
               hidden: {},
-              visible: { transition: { staggerChildren: 0.06 } },
+              visible: { transition: { staggerChildren: 0.05 } },
             }}
-            className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4"
+            className="mx-auto max-w-6xl"
           >
-            {images.map((img) => (
-              <motion.div
-                key={img.id}
-                variants={{
-                  hidden: { opacity: 0, scale: 0.9 },
-                  visible: { opacity: 1, scale: 1 },
-                }}
-                className="group relative aspect-square overflow-hidden rounded-xl border border-[var(--electric-blue)]/30 transition-all hover:border-[var(--neon-pink)] hover:shadow-[0_0_25px_var(--neon-pink-glow)]"
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${img.gradient} transition-transform duration-300 group-hover:scale-110`}
-                />
-                <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-70 transition-all group-hover:scale-110 group-hover:opacity-100">
-                  📸
-                </div>
-                <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/20" />
-              </motion.div>
-            ))}
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {photos.map((photo, i) => (
+                <motion.figure
+                  key={photo.id}
+                  variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }
+                }
+                  className="group overflow-hidden rounded-xl border border-[var(--border)] transition-colors hover:border-[var(--pink)]/50"
+                >
+                  <div className="aspect-square bg-zinc-900">
+                    <img
+                      src={photo.url}
+                      alt={photo.caption || `Gallery photo ${i + 1}`}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                  </div>
+                  {photo.caption && (
+                    <figcaption className="p-3 text-center text-sm text-zinc-400">
+                      {photo.caption}
+                    </figcaption>
+                  )}
+                </motion.figure>
+              ))}
+            </div>
           </motion.div>
-        </div>
+        )}
       </section>
     </div>
   );

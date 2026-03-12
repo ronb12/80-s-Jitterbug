@@ -8,5 +8,14 @@ service cloud.firestore {
       // When you add Firebase Auth, restrict to admins only, e.g.:
       // allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
+    // Package pricing (public read; write for admin use—restrict with Auth later)
+    match /settings/{docId} {
+      allow read, write: if true;
+    }
+    // Gallery: public read; write for admin (restrict with Auth later)
+    match /gallery/{photoId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
   }
 }
