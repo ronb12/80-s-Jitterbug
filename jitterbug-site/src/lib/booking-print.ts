@@ -72,8 +72,8 @@ export function openBookingContractPrint(booking: Booking): void {
   <div class="section">
     <h2>Photo release</h2>
     <table>
-      <tr><th>Use photos for marketing</th><td>${b.photoReleaseConsent ? "Yes" : "No"}</td></tr>
-      <tr><th>Includes minors permission</th><td>${b.photoReleaseIncludesMinors ? "Yes" : "No"}</td></tr>
+      <tr><th>Use photos for marketing</th><td>${b.photoReleaseConsent === true ? "Yes" : "No"}</td></tr>
+      <tr><th>Includes minors permission</th><td>${b.photoReleaseIncludesMinors === true ? "Yes" : "No"}</td></tr>
     </table>
   </div>
 

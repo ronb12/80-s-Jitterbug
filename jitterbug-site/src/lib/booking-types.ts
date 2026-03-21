@@ -11,6 +11,9 @@ export interface Booking {
   eventAddress: string;
   package: string;
   message: string;
+  /** From booking form / Firestore */
+  photoReleaseConsent?: boolean;
+  photoReleaseIncludesMinors?: boolean;
   status: BookingStatus;
   bookingRef: string;
   createdAt: string; // ISO
