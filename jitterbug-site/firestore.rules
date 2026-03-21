@@ -1,21 +1,19 @@
 rules_version = '2';
+// Admin operations require Firebase Auth (sign in via Firebase Console users).
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Bookings: anyone can create (submit form); allow read/update for admin use (restrict later with Auth)
     match /bookings/{bookingId} {
-      allow create: if true;
-      allow read, update, delete: if true;
-      // When you add Firebase Auth, restrict to admins only, e.g.:
-      // allow read, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+      // Public booking form must not set payment fields (only Cloud Functions / admin).
+      allow create: if !request.resource.data.keys().hasAny(['depositPaid', 'stripeCheckoutSessionId']);
+      allow read, update, delete: if request.auth != null;
     }
-    // Package pricing (public read; write for admin use—restrict with Auth later)
     match /settings/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null;
     }
-    // Gallery: public read; write for admin (restrict with Auth later)
     match /gallery/{photoId} {
       allow read: if true;
-      allow create, update, delete: if true;
+      allow create, update, delete: if request.auth != null;
     }
   }
 }

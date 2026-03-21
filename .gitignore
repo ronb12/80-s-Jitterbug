@@ -9,6 +9,11 @@ build
 .env*
 !.env.example
 
+# Xcode / iOS
+**/xcuserdata/
+**/DerivedData/
+jitterbug-ios/**/build/
+
 # Misc
 .DS_Store
 *.pem

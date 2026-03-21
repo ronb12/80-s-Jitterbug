@@ -19,6 +19,7 @@
 
 # Firebase
 .firebase/
+functions/lib/
 
 # production
 /build

@@ -2,6 +2,10 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "functions": {
+    "source": "functions",
+    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+  },
   "hosting": {
     "public": "out",
     "ignore": [
@@ -9,6 +13,22 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "trailingSlash": true
+    "trailingSlash": true,
+    "rewrites": [
+      {
+        "source": "/api/stripeCheckout",
+        "function": {
+          "functionId": "stripeCheckout",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/api/stripeWebhook",
+        "function": {
+          "functionId": "stripeWebhook",
+          "region": "us-central1"
+        }
+      }
+    ]
   }
 }
