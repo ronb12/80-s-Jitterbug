@@ -43,6 +43,8 @@ Copy `.env.example` to `.env.local` and fill in:
 - **Site URL:** `NEXT_PUBLIC_SITE_URL` (e.g. `https://80sjitterbug.com` for canonical and Open Graph)
 - **Contact (shown on Contact, Privacy, Terms):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE` (e.g. `you@example.com`, `(555) 123-4567`)
 
+**Google Cloud “API key accessible” / referrer restrictions:** see **[`GOOGLE-CLOUD-API-KEY-SETUP.md`](GOOGLE-CLOUD-API-KEY-SETUP.md)** (browser + iOS key allowlists for this project).
+
 ---
 
 ## Deployment (Firebase)
