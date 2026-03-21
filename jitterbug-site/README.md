@@ -49,7 +49,7 @@ Copy **`.env.local.example`** to `.env.local` and fill in:
 
 ## Deployment
 
-**GitHub + Vercel + Neon:** **[`INTEGRATIONS.md`](INTEGRATIONS.md)** — how the three connect and how to verify **`DATABASE_URL`** on Vercel.
+**GitHub + Vercel + Neon:** **[`INTEGRATIONS.md`](INTEGRATIONS.md)** — why Neon **won’t** show GitHub (by design), where **Git** and **`DATABASE_URL`** show in **Vercel**, and optional **Neon ↔ Vercel** integrations for a visible link.
 
 **Recommended:** **[`VERCEL.md`](VERCEL.md)** — connect the repo, set env vars, deploy. In **Admin → Settings** (Neon `site_settings`), set **`stripePublicBaseUrl`** to your Vercel production URL (no trailing slash).
 

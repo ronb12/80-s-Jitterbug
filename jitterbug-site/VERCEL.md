@@ -1,5 +1,11 @@
 # Deploy on Vercel (Stripe + booking API + FCM)
 
+## GitHub + Neon (expectations)
+
+**GitHub does not connect to Neon.** Flow is: **GitHub → Vercel** (Git) and **Vercel → Neon** via **`DATABASE_URL`**. Neon’s console usually **won’t** list GitHub unless you add an integration — see **`INTEGRATIONS.md`** for where each link appears in the UI and optional **Vercel–Neon** marketplace setup.
+
+---
+
 ## “No Next.js version detected”
 
 The app’s `package.json` is inside **`jitterbug-site/`**. If you connected the **whole GitHub repo** to Vercel, either:
