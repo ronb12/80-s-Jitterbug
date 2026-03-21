@@ -1,5 +1,7 @@
 # Neon (Postgres) database
 
+**This repo’s Neon project** (ID, region, CLI commands): **[`NEON-PROJECT.md`](NEON-PROJECT.md)**.
+
 The **Next.js site** stores all app data in **Neon** (PostgreSQL), not Firestore:
 
 - Bookings, site settings (contact + Stripe publishable config), packages, event types, gallery
@@ -10,7 +12,9 @@ The **Next.js site** stores all app data in **Neon** (PostgreSQL), not Firestore
 
 ## 1. Create Neon project
 
-1. [Neon](https://neon.tech) → New project → copy **connection string** (use **pooled** / serverless-friendly URL when offered).
+**CLI (already done for `jitterbug-site`):** `npx neonctl projects create --name jitterbug-site --region-id aws-us-east-1 --org-id <org-id> --set-context` — see **`NEON-CLI.md`** / **`NEON-PROJECT.md`**.
+
+**Console:** [Neon](https://neon.tech) → New project → copy **connection string** (use **pooled** / serverless-friendly URL when offered).
 
 2. Add to **`.env.local`** and Vercel:
 
