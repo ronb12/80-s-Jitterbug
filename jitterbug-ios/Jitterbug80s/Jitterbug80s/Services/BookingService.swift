@@ -35,7 +35,41 @@ final class BookingService {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         let docRef = try await db.collection(collectionId).addDocument(data: data)
+        await Self.notifyNewBookingPushIfConfigured(
+            bookingId: docRef.documentID,
+            bookingRef: ref,
+            name: form.name
+        )
         return (ref, docRef.documentID)
+    }
+
+    /// When APIs run on Vercel (no Firestore `onBookingCreatedPush`), ping the secured notify endpoint if configured.
+    private static func notifyNewBookingPushIfConfigured(bookingId: String, bookingRef: String, name: String) async {
+        guard let secret = Bundle.main.object(forInfoDictionaryKey: "InternalNewBookingNotifySecret") as? String,
+              !secret.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return }
+
+        let settings = await SettingsService().getSiteSettings()
+        let base = settings.stripePublicBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: "\(base)/api/push/notify-new-booking") else { return }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(secret, forHTTPHeaderField: "x-internal-notify-secret")
+        let payload: [String: Any] = [
+            "bookingId": bookingId,
+            "bookingRef": bookingRef,
+            "name": name
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        do {
+            let (_, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return }
+        } catch {
+            // Non-fatal: booking is already in Firestore
+        }
     }
 
     func listBookings() async throws -> [Booking] {

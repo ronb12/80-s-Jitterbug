@@ -5,7 +5,9 @@ Bookings are still created in Firestore as before. When **Enable "Pay deposit"**
 - **Website:** **Pay deposit with card** opens **Stripe Checkout** in the browser (hosted by Stripe).
 - **iOS app:** **Pay deposit with card** opens **Stripe Payment Sheet** inside the app. The card is still charged by **Stripe**; the app never sees your secret key.
 
-API routes and webhooks run in **Firebase Cloud Functions** (static hosting, no Next.js payment API). If you prefer not to use Firebase for creating payment sessions, host an equivalent `POST` that returns `{ "clientSecret": "…" }` and point the app at that URL (custom work — see `jitterbug-ios/IOS-STRIPE-NATIVE.md`).
+**Vercel (recommended):** Stripe and webhooks run as **Next.js Route Handlers** in this repo (`/api/stripeCheckout`, `/api/stripePaymentIntent`, `/api/stripeWebhook`). Configure env vars on Vercel — see **`VERCEL.md`**.
+
+**Firebase Cloud Functions (legacy):** Same paths can be served via Hosting rewrites to Functions; secrets are set with `firebase functions:secrets:set`. See sections 2–3 below.
 
 ## 1. Stripe Dashboard
 
@@ -20,13 +22,13 @@ These are the keys you paste into **Admin → Settings** in the iOS app (or into
 | **Test publishable key** (`pk_test_…`) | [Dashboard → Developers → API keys (test)](https://dashboard.stripe.com/test/apikeys) — ensure **Test mode** is **ON** (toggle at top of the dashboard). Under **Standard keys**, copy **Publishable key**. |
 | **Live publishable key** (`pk_live_…`) | Turn **Test mode** **OFF**, then open [Developers → API keys](https://dashboard.stripe.com/apikeys). Copy the **Publishable key** (starts with `pk_live_`). |
 
-**Do not** paste **Secret key** (`sk_test_…` / `sk_live_…`) or **webhook signing secret** (`whsec_…`) into Admin Settings or Firestore—those go only into Firebase Functions secrets (section 2 below).
+**Do not** paste **Secret key** (`sk_test_…` / `sk_live_…`) or **webhook signing secret** (`whsec_…`) into Admin Settings or Firestore—those go only into **Vercel env** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) or Firebase Functions secrets (section 2 below).
 
 **Quick check:** Test keys always start with `pk_test_`; live publishable keys start with `pk_live_`. If the wrong one appears, toggle **Test mode** in Stripe and open **API keys** again.
 
 3. **Developers → Webhooks → Add endpoint**  
-   - URL: `https://YOUR_PROJECT.web.app/api/stripeWebhook`  
-     (or your custom domain + `/api/stripeWebhook`)  
+   - URL: **`https://<your-vercel-domain>/api/stripeWebhook`** (Vercel)  
+     or `https://YOUR_PROJECT.web.app/api/stripeWebhook` (Firebase Hosting + Functions)  
    - Events: enable **both**  
      - `checkout.session.completed` (website hosted Checkout)  
      - `payment_intent.succeeded` (iOS Payment Sheet)  

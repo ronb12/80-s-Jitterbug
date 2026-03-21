@@ -47,10 +47,28 @@ function snapshotToBookings(snap: QuerySnapshot<DocumentData>): Booking[] {
 }
 
 export async function submitBooking(form: BookingFormData): Promise<{ bookingRef: string; id: string }> {
+  // Vercel / Node: server creates the doc + admin FCM (replaces Firestore `onBookingCreatedPush`).
+  if (typeof window !== "undefined") {
+    try {
+      const r = await fetch(`${window.location.origin}/api/bookings/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (r.ok) {
+        const data = (await r.json()) as { bookingRef?: string; id?: string; error?: string };
+        if (data.bookingRef && data.id) {
+          return { bookingRef: data.bookingRef, id: data.id };
+        }
+      }
+    } catch {
+      /* fall through to client Firestore (static hosting / offline) */
+    }
+  }
+
   if (!db) throw new Error("Firebase not configured");
 
   const bookingRef = generateBookingRef();
-  const now = new Date().toISOString();
 
   const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), {
     name: form.name.trim(),

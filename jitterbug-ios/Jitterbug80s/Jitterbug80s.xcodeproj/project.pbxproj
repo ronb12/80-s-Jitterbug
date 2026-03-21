@@ -52,6 +52,51 @@
 		47AA804C2F631A5D00DE63DF /* AdminSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA804D2F631A5D00DE63DF /* AdminSettingsView.swift */; };
 		47AA80442F631A5D00DE63DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 47AA80452F631A5D00DE63DF /* Assets.xcassets */; };
 		47AA80462F631A5D00DE63DF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 47AA80472F631A5D00DE63DF /* GoogleService-Info.plist */; };
+		47BB7E012F631A5D00DE63DF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E042F6315E200DE63DF /* FirebaseCore */; };
+		47BB7E022F631A5D00DE63DF /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E022F6315E200DE63DF /* FirebaseAuth */; };
+		47BB7E032F631A5D00DE63DF /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E032F6315E200DE63DF /* FirebaseFirestore */; };
+		47BB7E042F631A5D00DE63DF /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E062F6315E200DE63DF /* Stripe */; };
+		47BB7E052F631A5D00DE63DF /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E082F6315E200DE63DF /* StripePaymentSheet */; };
+		47BB7E062F631A5D00DE63DF /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E092F6315E200DE63DF /* FirebaseMessaging */; };
+		47BB7D012F631A5D00DE63DF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 47AA80452F631A5D00DE63DF /* Assets.xcassets */; };
+		47BB7D022F631A5D00DE63DF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 47AA80472F631A5D00DE63DF /* GoogleService-Info.plist */; };
+		47BB7F012F631A5D00DE63DF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80112F631A5D00DE63DF /* ContentView.swift */; };
+		47BB7FA22F631A5D00DE63DF /* Jitterbug80sMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BB7FA12F631A5D00DE63DF /* Jitterbug80sMacApp.swift */; };
+		47BB7F032F631A5D00DE63DF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80852F631A5D00DE63DF /* AppDelegate.swift */; };
+		47BB7F042F631A5D00DE63DF /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80152F631A5D00DE63DF /* AuthService.swift */; };
+		47BB7F052F631A5D00DE63DF /* BookingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80172F631A5D00DE63DF /* BookingService.swift */; };
+		47BB7F062F631A5D00DE63DF /* EventTypesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80192F631A5D00DE63DF /* EventTypesService.swift */; };
+		47BB7F072F631A5D00DE63DF /* FirebaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA801B2F631A5D00DE63DF /* FirebaseManager.swift */; };
+		47BB7F082F631A5D00DE63DF /* GalleryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA801D2F631A5D00DE63DF /* GalleryService.swift */; };
+		47BB7F092F631A5D00DE63DF /* ImgurUploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80612F6315E200DE63DF /* ImgurUploadService.swift */; };
+		47BB7F0A2F631A5D00DE63DF /* PackagesService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA801F2F631A5D00DE63DF /* PackagesService.swift */; };
+		47BB7F0B2F631A5D00DE63DF /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80212F631A5D00DE63DF /* MainTabView.swift */; };
+		47BB7F0C2F631A5D00DE63DF /* AdminDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80732F631A5D00DE63DF /* AdminDashboardView.swift */; };
+		47BB7F0D2F631A5D00DE63DF /* AdminLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80232F631A5D00DE63DF /* AdminLoginView.swift */; };
+		47BB7F0E2F631A5D00DE63DF /* AdminTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80252F631A5D00DE63DF /* AdminTabView.swift */; };
+		47BB7F0F2F631A5D00DE63DF /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80272F631A5D00DE63DF /* Booking.swift */; };
+		47BB7F102F631A5D00DE63DF /* BookingContractTerms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA806F2F631A5D00DE63DF /* BookingContractTerms.swift */; };
+		47BB7F112F631A5D00DE63DF /* GalleryPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80292F631A5D00DE63DF /* GalleryPhoto.swift */; };
+		47BB7F122F631A5D00DE63DF /* PackagePrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802B2F631A5D00DE63DF /* PackagePrice.swift */; };
+		47BB7F132F631A5D00DE63DF /* AdminBookingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802D2F631A5D00DE63DF /* AdminBookingsView.swift */; };
+		47BB7F142F631A5D00DE63DF /* AdminDocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802F2F631A5D00DE63DF /* AdminDocumentsView.swift */; };
+		47BB7F152F631A5D00DE63DF /* AdminEventTypesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80312F631A5D00DE63DF /* AdminEventTypesView.swift */; };
+		47BB7F162F631A5D00DE63DF /* AdminGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80332F631A5D00DE63DF /* AdminGalleryView.swift */; };
+		47BB7F172F631A5D00DE63DF /* AdminPackagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80352F631A5D00DE63DF /* AdminPackagesView.swift */; };
+		47BB7F182F631A5D00DE63DF /* BookView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80372F631A5D00DE63DF /* BookView.swift */; };
+		47BB7F192F631A5D00DE63DF /* BookingLookupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80392F631A5D00DE63DF /* BookingLookupView.swift */; };
+		47BB7F1A2F631A5D00DE63DF /* BookingSuccessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA803B2F631A5D00DE63DF /* BookingSuccessView.swift */; };
+		47BB7F1B2F631A5D00DE63DF /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA803D2F631A5D00DE63DF /* GalleryView.swift */; };
+		47BB7F1C2F631A5D00DE63DF /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA803F2F631A5D00DE63DF /* HomeView.swift */; };
+		47BB7F1D2F631A5D00DE63DF /* MoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80412F631A5D00DE63DF /* MoreView.swift */; };
+		47BB7F1E2F631A5D00DE63DF /* PackagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80432F631A5D00DE63DF /* PackagesView.swift */; };
+		47BB7F1F2F631A5D00DE63DF /* LandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80492F631A5D00DE63DF /* LandingView.swift */; };
+		47BB7F202F631A5D00DE63DF /* PrintService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80712F631A5D00DE63DF /* PrintService.swift */; };
+		47BB7F212F631A5D00DE63DF /* SettingsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA804B2F631A5D00DE63DF /* SettingsService.swift */; };
+		47BB7F222F631A5D00DE63DF /* StripeCheckoutService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80792F631A5D00DE63DF /* StripeCheckoutService.swift */; };
+		47BB7F232F631A5D00DE63DF /* StripeNativePayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA807A2F631A5D00DE63DF /* StripeNativePayment.swift */; };
+		47BB7F242F631A5D00DE63DF /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80862F631A5D00DE63DF /* PushNotificationService.swift */; };
+		47BB7F252F631A5D00DE63DF /* AdminSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA804D2F631A5D00DE63DF /* AdminSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,10 +118,12 @@
 
 /* Begin PBXFileReference section */
 		47AA7D9B2F6315E200DE63DF /* Jitterbug80s.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Jitterbug80s.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		47BB79012F631A5D00DE63DF /* Jitterbug80sMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jitterbug80sMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		47AA7DA82F6315E300DE63DF /* Jitterbug80sTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Jitterbug80sTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		47AA7DB22F6315E300DE63DF /* Jitterbug80sUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Jitterbug80sUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		47AA80112F631A5D00DE63DF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		47AA80132F631A5D00DE63DF /* Jitterbug80sApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Jitterbug80sApp.swift; sourceTree = "<group>"; };
+		47BB7FA12F631A5D00DE63DF /* Jitterbug80sMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Jitterbug80sMacApp.swift; sourceTree = "<group>"; };
 		47AA80152F631A5D00DE63DF /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		47AA80172F631A5D00DE63DF /* BookingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingService.swift; sourceTree = "<group>"; };
 		47AA80192F631A5D00DE63DF /* EventTypesService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTypesService.swift; sourceTree = "<group>"; };
@@ -162,6 +209,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		47BB7B022F631A5D00DE63DF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BB7E032F631A5D00DE63DF /* FirebaseFirestore in Frameworks */,
+				47BB7E022F631A5D00DE63DF /* FirebaseAuth in Frameworks */,
+				47BB7E012F631A5D00DE63DF /* FirebaseCore in Frameworks */,
+				47BB7E042F631A5D00DE63DF /* Stripe in Frameworks */,
+				47BB7E052F631A5D00DE63DF /* StripePaymentSheet in Frameworks */,
+				47BB7E062F631A5D00DE63DF /* FirebaseMessaging in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -179,6 +239,7 @@
 			isa = PBXGroup;
 			children = (
 				47AA7D9B2F6315E200DE63DF /* Jitterbug80s.app */,
+				47BB79012F631A5D00DE63DF /* Jitterbug80sMac.app */,
 				47AA7DA82F6315E300DE63DF /* Jitterbug80sTests.xctest */,
 				47AA7DB22F6315E300DE63DF /* Jitterbug80sUITests.xctest */,
 			);
@@ -191,6 +252,7 @@
 				47AA80112F631A5D00DE63DF /* ContentView.swift */,
 				47AA80852F631A5D00DE63DF /* AppDelegate.swift */,
 				47AA80132F631A5D00DE63DF /* Jitterbug80sApp.swift */,
+				47BB7FA12F631A5D00DE63DF /* Jitterbug80sMacApp.swift */,
 				47AA80472F631A5D00DE63DF /* GoogleService-Info.plist */,
 				47AA80512F631A5D00DE63DF /* Models */,
 				47AA80522F631A5D00DE63DF /* Services */,
@@ -337,6 +399,31 @@
 			productReference = 47AA7DB22F6315E300DE63DF /* Jitterbug80sUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		47BB7A012F631A5D00DE63DF /* Jitterbug80sMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 47BB78012F631A5D00DE63DF /* Build configuration list for PBXNativeTarget "Jitterbug80sMac" */;
+			buildPhases = (
+				47BB7B012F631A5D00DE63DF /* Sources */,
+				47BB7B022F631A5D00DE63DF /* Frameworks */,
+				47BB7B032F631A5D00DE63DF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Jitterbug80sMac;
+			packageProductDependencies = (
+				47AA7E042F6315E200DE63DF /* FirebaseCore */,
+				47AA7E022F6315E200DE63DF /* FirebaseAuth */,
+				47AA7E032F6315E200DE63DF /* FirebaseFirestore */,
+				47AA7E092F6315E200DE63DF /* FirebaseMessaging */,
+				47AA7E062F6315E200DE63DF /* Stripe */,
+				47AA7E082F6315E200DE63DF /* StripePaymentSheet */,
+			);
+			productName = Jitterbug80sMac;
+			productReference = 47BB79012F631A5D00DE63DF /* Jitterbug80sMac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -348,6 +435,9 @@
 				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					47AA7D9A2F6315E200DE63DF = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					47BB7A012F631A5D00DE63DF = {
 						CreatedOnToolsVersion = 26.2;
 					};
 					47AA7DA72F6315E300DE63DF = {
@@ -379,6 +469,7 @@
 			projectRoot = "";
 			targets = (
 				47AA7D9A2F6315E200DE63DF /* Jitterbug80s */,
+				47BB7A012F631A5D00DE63DF /* Jitterbug80sMac */,
 				47AA7DA72F6315E300DE63DF /* Jitterbug80sTests */,
 				47AA7DB12F6315E300DE63DF /* Jitterbug80sUITests */,
 			);
@@ -406,6 +497,15 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47BB7B032F631A5D00DE63DF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BB7D012F631A5D00DE63DF /* Assets.xcassets in Resources */,
+				47BB7D022F631A5D00DE63DF /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -467,6 +567,50 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		47BB7B012F631A5D00DE63DF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				47BB7F012F631A5D00DE63DF /* ContentView.swift in Sources */,
+				47BB7FA22F631A5D00DE63DF /* Jitterbug80sMacApp.swift in Sources */,
+				47BB7F032F631A5D00DE63DF /* AppDelegate.swift in Sources */,
+				47BB7F042F631A5D00DE63DF /* AuthService.swift in Sources */,
+				47BB7F052F631A5D00DE63DF /* BookingService.swift in Sources */,
+				47BB7F062F631A5D00DE63DF /* EventTypesService.swift in Sources */,
+				47BB7F072F631A5D00DE63DF /* FirebaseManager.swift in Sources */,
+				47BB7F082F631A5D00DE63DF /* GalleryService.swift in Sources */,
+				47BB7F092F631A5D00DE63DF /* ImgurUploadService.swift in Sources */,
+				47BB7F0A2F631A5D00DE63DF /* PackagesService.swift in Sources */,
+				47BB7F0B2F631A5D00DE63DF /* MainTabView.swift in Sources */,
+				47BB7F0C2F631A5D00DE63DF /* AdminDashboardView.swift in Sources */,
+				47BB7F0D2F631A5D00DE63DF /* AdminLoginView.swift in Sources */,
+				47BB7F0E2F631A5D00DE63DF /* AdminTabView.swift in Sources */,
+				47BB7F0F2F631A5D00DE63DF /* Booking.swift in Sources */,
+				47BB7F102F631A5D00DE63DF /* BookingContractTerms.swift in Sources */,
+				47BB7F112F631A5D00DE63DF /* GalleryPhoto.swift in Sources */,
+				47BB7F122F631A5D00DE63DF /* PackagePrice.swift in Sources */,
+				47BB7F132F631A5D00DE63DF /* AdminBookingsView.swift in Sources */,
+				47BB7F142F631A5D00DE63DF /* AdminDocumentsView.swift in Sources */,
+				47BB7F152F631A5D00DE63DF /* AdminEventTypesView.swift in Sources */,
+				47BB7F162F631A5D00DE63DF /* AdminGalleryView.swift in Sources */,
+				47BB7F172F631A5D00DE63DF /* AdminPackagesView.swift in Sources */,
+				47BB7F182F631A5D00DE63DF /* BookView.swift in Sources */,
+				47BB7F192F631A5D00DE63DF /* BookingLookupView.swift in Sources */,
+				47BB7F1A2F631A5D00DE63DF /* BookingSuccessView.swift in Sources */,
+				47BB7F1B2F631A5D00DE63DF /* GalleryView.swift in Sources */,
+				47BB7F1C2F631A5D00DE63DF /* HomeView.swift in Sources */,
+				47BB7F1D2F631A5D00DE63DF /* MoreView.swift in Sources */,
+				47BB7F1E2F631A5D00DE63DF /* PackagesView.swift in Sources */,
+				47BB7F1F2F631A5D00DE63DF /* LandingView.swift in Sources */,
+				47BB7F202F631A5D00DE63DF /* PrintService.swift in Sources */,
+				47BB7F212F631A5D00DE63DF /* SettingsService.swift in Sources */,
+				47BB7F222F631A5D00DE63DF /* StripeCheckoutService.swift in Sources */,
+				47BB7F232F631A5D00DE63DF /* StripeNativePayment.swift in Sources */,
+				47BB7F242F631A5D00DE63DF /* PushNotificationService.swift in Sources */,
+				47BB7F252F631A5D00DE63DF /* AdminSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -647,7 +791,9 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -703,7 +849,9 @@
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator xros xrsimulator";
+				SUPPORTS_MACCATALYST = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -711,6 +859,126 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				XROS_DEPLOYMENT_TARGET = 26.2;
+			};
+			name = Release;
+		};
+		47BB77012F631A5D00DE63DF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Jitterbug80s/Jitterbug80s.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4SQJ3AH62S;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "80's Jitterbug";
+				INFOPLIST_KEY_CFBundleName = "80's Jitterbug";
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.0;
+				INFOPLIST_KEY_CFBundleVersion = 1;
+				INFOPLIST_KEY_ImgbbApiKey = 104f8f42bea1e4b53ea89574a6a5399b;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Bradley Virtual Solutions, LLC. All rights reserved.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "80's Jitterbug uses your photo library so admins can add photos to the event gallery.";
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = remote-notification;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = remote-notification;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=macosx*]" = remote-notification;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=macosx*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=macosx*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.bradleyvirtualsolutions.Jitterbug80s;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = com.bradleyvirtualsolutions.Jitterbug80s;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = maccatalyst.com.bradleyvirtualsolutions.Jitterbug80s;
+				PRODUCT_NAME = Jitterbug80sMac;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		47BB77022F631A5D00DE63DF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Jitterbug80s/Jitterbug80s.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4SQJ3AH62S;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "80's Jitterbug";
+				INFOPLIST_KEY_CFBundleName = "80's Jitterbug";
+				INFOPLIST_KEY_CFBundleShortVersionString = 1.0;
+				INFOPLIST_KEY_CFBundleVersion = 1;
+				INFOPLIST_KEY_ImgbbApiKey = 104f8f42bea1e4b53ea89574a6a5399b;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Bradley Virtual Solutions, LLC. All rights reserved.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "80's Jitterbug uses your photo library so admins can add photos to the event gallery.";
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphoneos*]" = remote-notification;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=iphonesimulator*]" = remote-notification;
+				"INFOPLIST_KEY_UIBackgroundModes[sdk=macosx*]" = remote-notification;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=macosx*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=macosx*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.bradleyvirtualsolutions.Jitterbug80s;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphonesimulator*]" = com.bradleyvirtualsolutions.Jitterbug80s;
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*]" = maccatalyst.com.bradleyvirtualsolutions.Jitterbug80s;
+				PRODUCT_NAME = Jitterbug80sMac;
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 2;
 			};
 			name = Release;
 		};
@@ -833,6 +1101,15 @@
 			buildConfigurations = (
 				47AA7DBD2F6315E300DE63DF /* Debug */,
 				47AA7DBE2F6315E300DE63DF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		47BB78012F631A5D00DE63DF /* Build configuration list for PBXNativeTarget "Jitterbug80sMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				47BB77012F631A5D00DE63DF /* Debug */,
+				47BB77022F631A5D00DE63DF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

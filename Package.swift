@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "Jitterbug80s",
-    platforms: [.iOS(.v17)],
+    platforms: [.iOS(.v17), .macCatalyst(.v15)],
     products: [
         .library(name: "Jitterbug80s", targets: ["Jitterbug80s"]),
     ],

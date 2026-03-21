@@ -1,29 +1,46 @@
-# Deploy 80's Jitterbug website to Firebase Hosting
+# Deploy 80's Jitterbug website
 
-Run from **Terminal** (or Cursor’s terminal) from the **jitterbug-site** folder.
+## Recommended: Vercel (Stripe + booking API on Next.js)
 
-## One command (recommended)
+The app uses **Next.js Route Handlers** for Stripe, webhooks, and booking submit. Deploy from **`jitterbug-site`** on **Vercel** and set environment variables — see **`VERCEL.md`**.
+
+Point **`settings/site` → `stripePublicBaseUrl`** at your Vercel production URL (no trailing slash).
+
+---
+
+## Legacy: Firebase Hosting + Cloud Functions
+
+`next.config.ts` **no longer** uses `output: 'export'`, so `npm run build` does **not** produce an `out/` folder for Firebase Hosting as-is. To keep **only** static hosting on Firebase, you would need to restore static export (and lose in-app API routes unless you keep using Cloud Function rewrites).
+
+If you still use **Firebase Functions** + static `out/`:
+
+1. Restore `output: "export"` in `next.config.ts` (and ensure the site does not rely on `/api/*` on the same origin except via Hosting rewrites to Functions).
+2. Run:
 
 ```bash
-cd "/Users/ronellbradley/Desktop/80's Jitterbug/jitterbug-site"
-chmod +x deploy.sh
-./deploy.sh
-```
-
-Or run the steps yourself:
-
-```bash
-cd "/Users/ronellbradley/Desktop/80's Jitterbug/jitterbug-site"
+cd jitterbug-site
 npm run build
 firebase deploy --only hosting,functions
 ```
 
-Your site will be live at **https://jitterbug80s.web.app** (or your configured Firebase Hosting URL).
+### Old one-liner (`deploy.sh`)
+
+```bash
+cd jitterbug-site
+chmod +x deploy.sh
+./deploy.sh
+```
+
+`deploy.sh` expects a static `out/` build unless you’ve customized the pipeline.
+
+Your Firebase site URL is typically **https://jitterbug80s.web.app** (or your custom domain).
 
 ---
 
-**If `firebase deploy` fails:** run `firebase login` first. Ensure `firebase.json` exists and that the build produced an `out` folder (your `next.config` should use `output: 'export'` for static hosting).
+**If `firebase deploy` fails:** run `firebase login` first.
 
-**Stripe deposits:** After the first functions deploy, set secrets and webhooks per **`STRIPE-SETUP.md`**. Deploy updated Firestore rules with `firebase deploy --only firestore:rules` if you changed `firestore.rules`.
+**Stripe:** **`STRIPE-SETUP.md`** (Vercel env vars or Firebase Functions secrets).
 
-**Push (FCM):** Functions `onBookingCreatedPush`, `onBookingUpdatedPush`, and `registerBookingPushToken` deploy with `functions`; hosting must include the `/api/registerBookingPushToken` rewrite (see `firebase.json`). iOS setup: **`jitterbug-ios/IOS-PUSH.md`**.
+**Firestore rules:** `firebase deploy --only firestore:rules` when `firestore.rules` changes.
+
+**Push (FCM):** On Vercel, see **`VERCEL.md`** + **`jitterbug-ios/IOS-PUSH.md`**. On Firebase-only, Functions `onBookingCreatedPush`, `onBookingUpdatedPush`, and `registerBookingPushToken` deploy with `functions`; hosting rewrites are in `firebase.json`.

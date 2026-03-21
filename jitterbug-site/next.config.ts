@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Server routes (Stripe, webhooks, booking submit) require a Node build — deploy on Vercel (not static export).
   trailingSlash: true,
 };
 

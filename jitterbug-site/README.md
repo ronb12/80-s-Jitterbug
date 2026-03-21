@@ -7,7 +7,7 @@ A modern marketing and booking website for **80's Jitterbug** retro photo booth 
 ## Overview
 
 - **Live site:** [https://jitterbug80s.web.app](https://jitterbug80s.web.app)
-- **Stack:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, Firebase (Firestore, Analytics, Hosting)
+- **Stack:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, Firebase (Firestore, Analytics). **Production APIs (Stripe, webhooks, booking submit):** deploy on **[Vercel](https://vercel.com)** — see **`VERCEL.md`**.
 - **Features:** Public pages (Home, About, Packages, Gallery, Booking, Contact), booking form with Firestore, owner admin (bookings, packages, event types, gallery), session-persistent admin login
 
 ---
@@ -28,16 +28,17 @@ Open [http://localhost:3000](http://localhost:3000).
 | Command | Description |
 |--------|-------------|
 | `npm run dev` | Start development server |
-| `npm run build` | Production build (output in `out/` for static export) |
+| `npm run build` | Production build (Node server + static pages; use Vercel or `next start`) |
 | `npm start` | Serve production build locally |
 
 ---
 
 ## Environment
 
-Copy `.env.example` to `.env.local` and fill in:
+Copy **`.env.local.example`** to `.env.local` and fill in:
 
 - **Firebase:** `NEXT_PUBLIC_FIREBASE_*` (from [Firebase Console](https://console.firebase.google.com/project/jitterbug80s/settings/general) → Your apps)
+- **Server (local Stripe / webhooks):** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FIREBASE_SERVICE_ACCOUNT_JSON` — see **`VERCEL.md`**
 - **Admin:** `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_PASSWORD` (required for `/admin/*`)
 - **Optional second admin:** `NEXT_PUBLIC_ADMIN_EMAIL_2`, `NEXT_PUBLIC_ADMIN_PASSWORD_2`
 - **Site URL:** `NEXT_PUBLIC_SITE_URL` (e.g. `https://80sjitterbug.com` for canonical and Open Graph)
@@ -47,17 +48,17 @@ Copy `.env.example` to `.env.local` and fill in:
 
 ---
 
-## Deployment (Firebase)
+## Deployment
 
-Project ID: **jitterbug80s**.
+**Recommended:** **[`VERCEL.md`](VERCEL.md)** — connect the repo, set env vars, deploy. Update Firestore `settings/site` → `stripePublicBaseUrl` to your Vercel URL.
+
+**Firebase (Firestore rules, optional legacy hosting):** Project ID **jitterbug80s**.
 
 ```bash
-npm run build
-firebase deploy --only hosting
-firebase deploy --only firestore   # when rules change
+firebase deploy --only firestore:rules   # when rules change
 ```
 
-Custom domain: Add the domain in [Firebase Hosting](https://console.firebase.google.com/project/jitterbug80s/hosting), then set `NEXT_PUBLIC_SITE_URL` and redeploy.
+Custom domain: configure in Vercel and/or [Firebase Hosting](https://console.firebase.google.com/project/jitterbug80s/hosting); set `NEXT_PUBLIC_SITE_URL` accordingly.
 
 ---
 
@@ -79,7 +80,7 @@ src/
 ## Features
 
 - **Public site:** Home, About, Packages, Gallery, Booking, Contact; Privacy and Terms.
-- **Booking:** Form submits to Firestore; customer sees a booking reference (e.g. JB-1234). No email sending (optional future enhancement).
+- **Booking:** Form prefers **`POST /api/bookings/submit`** (Vercel) so admin push can fire without Cloud Functions; falls back to client Firestore if the API is unavailable. Customer sees a booking reference (e.g. JB-1234).
 - **Admin (session-persistent):**
   - **Bookings** — List, filter, search, update status, add/edit/delete, export CSV, copy ref, email link.
   - **Packages** — Edit package names and prices (stored in Firestore; used on Packages page and booking form).

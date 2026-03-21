@@ -1,0 +1,2 @@
+# Firebase Cloud Functions are a separate package; keep them out of the Next.js Vercel bundle.
+functions

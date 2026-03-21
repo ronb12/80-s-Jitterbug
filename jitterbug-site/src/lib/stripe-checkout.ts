@@ -1,5 +1,5 @@
 /**
- * Calls Firebase Hosting rewrite → stripeCheckout Cloud Function.
+ * Same-origin POST `/api/stripeCheckout` — implemented on Vercel (Next.js route) or Firebase Hosting rewrite → Cloud Function.
  * Same-origin only works when the site is deployed (not file://).
  */
 
