@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd jitterbug-site && npm ci",
-  "buildCommand": "cd jitterbug-site && npm run build"
+  "buildCommand": "cd jitterbug-site && npm run build",
+  "outputDirectory": "jitterbug-site/.next"
 }

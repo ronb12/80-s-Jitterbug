@@ -5,7 +5,9 @@
 The app’s `package.json` is inside **`jitterbug-site/`**. If you connected the **whole GitHub repo** to Vercel, either:
 
 1. Set **Root Directory** to **`jitterbug-site`** (Project → Settings → General), **or**
-2. Use the **repo root** `vercel.json` + `package.json` (see **`../VERCEL-ROOT.md`** in the monorepo).
+2. Use the **repo root** `vercel.json` + `package.json` (see **`../VERCEL-ROOT.md`**), which sets **`outputDirectory`** to **`jitterbug-site/.next`** so the Next.js output is found.
+
+If you still see **routes-manifest.json** / **Output Directory** errors: in Vercel → Settings → Build & Output, **do not** set Output Directory to `.next` at the monorepo root; use **`jitterbug-site/.next`** or leave it empty so `vercel.json` controls it.
 
 ---
 
