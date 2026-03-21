@@ -7,6 +7,7 @@ The **Next.js site** stores all app data in **Neon** (PostgreSQL), not Firestore
 - Bookings, site settings (contact + Stripe publishable config), packages, event types, gallery
 - Customer deposit push tokens (`booking_push_tokens`)
 - Admin FCM tokens (`admin_fcm_tokens`) when registered via **`POST /api/data/admin-fcm`**
+- **`users`** — optional Neon-side user records (`email`, `firebase_uid`, `role`, `metadata`, …) for auditing or future server auth; sync from Firebase or your own flows as needed
 
 **Push notifications** (optional) use **Google FCM** on the server only via `firebase-admin`. Set **`FCM_SERVICE_ACCOUNT_JSON`** (or legacy **`FIREBASE_SERVICE_ACCOUNT_JSON`**) to a one-line service account JSON. If unset, pushes are skipped (logs a warning). The **browser does not load Firebase**.
 

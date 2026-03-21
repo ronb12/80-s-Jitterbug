@@ -1,9 +1,7 @@
-import Stripe
-import StripePaymentSheet
-import UIKit
+import Foundation
 
-/// In-app Stripe **Payment Sheet** for deposits. The card charge is processed by **Stripe**.
-/// The app only obtains a `PaymentIntent` **client secret** from your HTTPS backend (default: `POST …/api/stripePaymentIntent` on your public site URL).
+/// In-app Stripe **Payment Sheet** for deposits (iOS / iPadOS / Mac Catalyst only).
+/// The native **macOS** target does not link the Stripe iOS SDK (UIKit-based); use website checkout there.
 enum StripeNativePaymentError: LocalizedError {
     case invalidBaseURL
     case invalidResponse
@@ -11,6 +9,7 @@ enum StripeNativePaymentError: LocalizedError {
     case missingPublishableKey
     case missingClientSecret
     case noPresenter
+    case unavailableOnNativeMac
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +20,8 @@ enum StripeNativePaymentError: LocalizedError {
             return "Add your Stripe publishable key in Admin → Settings (pk_test_ or pk_live_ matching your Stripe mode)."
         case .missingClientSecret: return "Server did not return a payment session."
         case .noPresenter: return "Could not show payment screen. Try again."
+        case .unavailableOnNativeMac:
+            return "In-app Stripe isn’t available in the Mac app. Use iPhone/iPad or pay via your website."
         }
     }
 }
@@ -31,6 +32,30 @@ enum StripeNativePayment {
     /// - Returns: `true` if the customer completed payment, `false` if they cancelled.
     @MainActor
     static func presentDepositSheet(
+        bookingId: String,
+        publicSiteBaseURL: String,
+        publishableKey: String
+    ) async throws -> Bool {
+#if os(iOS)
+        return try await presentDepositSheetIOS(
+            bookingId: bookingId,
+            publicSiteBaseURL: publicSiteBaseURL,
+            publishableKey: publishableKey
+        )
+#else
+        throw StripeNativePaymentError.unavailableOnNativeMac
+#endif
+    }
+}
+
+#if os(iOS)
+import Stripe
+import StripePaymentSheet
+import UIKit
+
+extension StripeNativePayment {
+    @MainActor
+    fileprivate static func presentDepositSheetIOS(
         bookingId: String,
         publicSiteBaseURL: String,
         publishableKey: String
@@ -104,3 +129,4 @@ enum StripeNativePayment {
         return nil
     }
 }
+#endif

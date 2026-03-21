@@ -39,11 +39,16 @@ struct AdminDashboardView: View {
                         Button {
                             onViewAsCustomer()
                         } label: {
-                            Label("View as customer", systemImage: "person.crop.circle")
-                                .font(.body)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            HStack {
+                                Image(systemName: "person.crop.circle")
+                                    .symbolRenderingMode(.multicolor)
+                                Text("View as customer")
+                                    .font(.body)
+                                    .foregroundStyle(accentPink)
+                                Spacer(minLength: 0)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .foregroundStyle(accentPink)
                     }
                     Text("See the app as customers do, without logging out.")
                         .font(.caption)
@@ -66,14 +71,14 @@ struct AdminDashboardView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Image(systemName: "bell.badge.fill")
-                                    .foregroundStyle(accentPink)
+                                    .symbolRenderingMode(.multicolor)
                                 Text("\(pendingCount) pending request\(pendingCount == 1 ? "" : "s")")
                                     .font(.headline)
                             }
                             if let next = nextBooking {
                                 HStack {
                                     Image(systemName: "calendar")
-                                        .foregroundStyle(.secondary)
+                                        .symbolRenderingMode(.multicolor)
                                     Text("Next: \(next.eventDate) — \(next.eventType) — \(next.name)")
                                         .font(.subheadline)
                                 }
@@ -81,12 +86,17 @@ struct AdminDashboardView: View {
                             Button {
                                 selectedTab = 1
                             } label: {
-                                Label("Add booking", systemImage: "plus.circle.fill")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                        .symbolRenderingMode(.multicolor)
+                                    Text("Add booking")
+                                        .font(.headline)
+                                        .foregroundStyle(accentPink)
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
                             }
-                            .foregroundStyle(accentPink)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -106,22 +116,46 @@ struct AdminDashboardView: View {
             }
             .navigationTitle("Admin")
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .topBarLeading) {
-                    if let onViewAsCustomer = onViewAsCustomer {
-                        Button {
-                            onViewAsCustomer()
-                        } label: {
-                            Label("View as customer", systemImage: "person.crop.circle")
-                        }
-                    }
+                    viewAsCustomerToolbarButton
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    if let onLogout = onLogout {
-                        Button("Log out", action: onLogout)
-                    }
+                    logoutToolbarButton
                 }
+                #else
+                ToolbarItem(placement: .navigation) {
+                    viewAsCustomerToolbarButton
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    logoutToolbarButton
+                }
+                #endif
             }
             .task { await load() }
+        }
+    }
+
+    @ViewBuilder
+    private var viewAsCustomerToolbarButton: some View {
+        if let onViewAsCustomer = onViewAsCustomer {
+            Button {
+                onViewAsCustomer()
+            } label: {
+                Label {
+                    Text("View as customer")
+                } icon: {
+                    Image(systemName: "person.crop.circle")
+                        .symbolRenderingMode(.multicolor)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var logoutToolbarButton: some View {
+        if let onLogout = onLogout {
+            Button("Log out", action: onLogout)
         }
     }
 
@@ -135,7 +169,7 @@ struct AdminDashboardView: View {
         Button(action: action) {
             HStack {
                 Image(systemName: icon)
-                    .foregroundStyle(accentPink)
+                    .symbolRenderingMode(.multicolor)
                     .frame(width: 28, alignment: .center)
                 Text(title)
             }

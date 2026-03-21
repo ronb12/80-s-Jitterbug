@@ -1,4 +1,21 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+private enum JBMoreColors {
+    static var systemGray6: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.15)
+        #endif
+    }
+}
 
 private let websiteBaseURL = "https://jitterbug80s.web.app"
 private let accentPink = Color(red: 0.93, green: 0.28, blue: 0.6)
@@ -293,7 +310,7 @@ struct AboutView: View {
                     }
                 }
                 .padding(20)
-                .background(Color(.systemGray6))
+                .background(JBMoreColors.systemGray6)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding()
@@ -315,15 +332,20 @@ struct AboutView: View {
 
     private var whyItems: some View {
         VStack(alignment: .leading, spacing: 12) {
-            whyRow(icon: "🤝", title: "Break the ice", desc: "Guests who might not mingle naturally end up laughing together in front of the camera.")
-            whyRow(icon: "📸", title: "Instant takeaways", desc: "Print or digital—everyone leaves with a tangible memory from your event.")
-            whyRow(icon: "✨", title: "Social-ready content", desc: "Shareable photos and boomerangs that extend the buzz of your event online.")
+            // Bundled PNGs (Assets) — same emoji as web About; no “?” from missing emoji fonts.
+            whyRow(assetName: "IconHandshake", title: "Break the ice", desc: "Guests who might not mingle naturally end up laughing together in front of the camera.")
+            whyRow(assetName: "IconCamera", title: "Instant takeaways", desc: "Print or digital—everyone leaves with a tangible memory from your event.")
+            whyRow(assetName: "IconSparkles", title: "Social-ready content", desc: "Shareable photos and boomerangs that extend the buzz of your event online.")
         }
     }
 
-    private func whyRow(icon: String, title: String, desc: String) -> some View {
+    private func whyRow(assetName: String, title: String, desc: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Text(icon).font(.title2)
+            Image(assetName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 36, height: 36)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(title).font(.subheadline.weight(.semibold))
                 Text(desc).font(.caption).foregroundStyle(.secondary)
@@ -331,13 +353,17 @@ struct AboutView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemGray6))
+        .background(JBMoreColors.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func bullet(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Text("•").foregroundStyle(accentPink)
+            Circle()
+                .fill(accentPink)
+                .frame(width: 6, height: 6)
+                .padding(.top, 6)
+                .accessibilityHidden(true)
             Text(text)
         }
     }
@@ -398,7 +424,7 @@ struct ContactView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(Color(.systemGray6))
+        .background(JBMoreColors.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

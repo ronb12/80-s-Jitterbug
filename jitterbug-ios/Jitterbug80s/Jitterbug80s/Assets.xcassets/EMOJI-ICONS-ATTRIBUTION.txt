@@ -1,0 +1,9 @@
+Home / About decorative icons use raster art from Twemoji (Twitter / X),
+https://github.com/twitter/twemoji — licensed under CC-BY 4.0.
+Source: Twemoji 14.0.2 (72×72 PNG assets).
+
+IconGallery — Twemoji “framed picture” (🖼 U+1F5BC), used for Gallery tab and
+gallery empty / error placeholders (and Home “From Our Events” tiles).
+
+You may replace these PNGs in the Icon*.imagesets with your own branded artwork
+at any time; keep the same asset names or update Swift code accordingly.

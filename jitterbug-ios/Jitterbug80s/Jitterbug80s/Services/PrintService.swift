@@ -1,6 +1,9 @@
 import Foundation
+#if os(iOS)
 import UIKit
-import SwiftUI
+#elseif os(macOS)
+import AppKit
+#endif
 
 /// Generates print-ready HTML for contract and photo release and presents the system print dialog (or Save as PDF).
 enum PrintService {
@@ -148,6 +151,7 @@ enum PrintService {
 
     /// Present the system print UI (or Save as PDF) for the given HTML. Call from main thread.
     static func printHtml(_ html: String) {
+        #if os(iOS)
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first(where: { $0.isKeyWindow }),
               window.rootViewController != nil else { return }
@@ -162,7 +166,33 @@ enum PrintService {
         printController.present(animated: true) { _, completed, _ in
             if !completed { }
         }
+        #elseif os(macOS)
+        printHtmlMacOS(html)
+        #endif
     }
+
+    #if os(macOS)
+    /// macOS: HTML → attributed string, then system print / Save as PDF.
+    private static func printHtmlMacOS(_ html: String) {
+        guard let data = html.data(using: .utf8) else { return }
+        let opts: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        guard let attr = try? NSAttributedString(data: data, options: opts, documentAttributes: nil) else { return }
+
+        let printInfo = NSPrintInfo.shared.copy() as! NSPrintInfo
+        let pageWidth = printInfo.paperSize.width - printInfo.leftMargin - printInfo.rightMargin
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: max(pageWidth, 400), height: 10_000))
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.textStorage?.setAttributedString(attr)
+
+        let op = NSPrintOperation(view: textView, printInfo: printInfo)
+        op.jobTitle = "80's Jitterbug"
+        _ = op.run()
+    }
+    #endif
 
     /// Print the full contract for a booking. Uses current site settings for contact info.
     static func printContract(booking: Booking, ownerName: String, contactEmail: String, contactPhone: String) {

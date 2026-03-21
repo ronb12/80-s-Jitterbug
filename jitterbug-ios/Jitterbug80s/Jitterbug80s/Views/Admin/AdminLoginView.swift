@@ -14,8 +14,10 @@ struct AdminLoginView: View {
             Form {
                 Section("Admin login") {
                     TextField("Email", text: $email)
+                        #if os(iOS)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
+                        #endif
                     SecureField("Password", text: $password)
                 }
                 if let err = error {

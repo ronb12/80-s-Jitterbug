@@ -17,19 +17,44 @@ struct AdminSettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if loading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    Form {
+            settingsMainContent
+                .navigationTitle("Settings")
+                .task { await load() }
+                .alert("Saved", isPresented: $success) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("Settings saved. They will appear on the site and in the app.")
+                }
+                .sheet(item: $exportItem) { item in
+                    ExportedFileShareSheet(exportURL: item.url, onDismiss: { exportItem = nil })
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var settingsMainContent: some View {
+        if loading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            settingsForm
+        }
+    }
+
+    @ViewBuilder
+    private var settingsForm: some View {
+        Form {
                         Section {
                             TextField("Owner name", text: $settings.ownerName)
                             TextField("Contact email", text: $settings.contactEmail)
+                                #if os(iOS)
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
+                                #endif
                             TextField("Contact phone", text: $settings.contactPhone)
+                                #if os(iOS)
                                 .keyboardType(.phonePad)
+                                #endif
                         } header: {
                             Text("Contact")
                         } footer: {
@@ -37,8 +62,13 @@ struct AdminSettingsView: View {
                         }
 
                         Section {
+                            #if os(iOS)
                             TextField("Service area", text: $settings.serviceArea, axis: .vertical)
                                 .lineLimit(2...6)
+                            #else
+                            TextField("Service area", text: $settings.serviceArea)
+                                .lineLimit(6)
+                            #endif
                         } header: {
                             Text("Service area")
                         } footer: {
@@ -48,8 +78,10 @@ struct AdminSettingsView: View {
                         Section {
                             Toggle("Enable “Pay deposit” after booking", isOn: $settings.stripeCheckoutEnabled)
                             TextField("Public site URL (Stripe redirects)", text: $settings.stripePublicBaseUrl)
+                                #if os(iOS)
                                 .textInputAutocapitalization(.never)
                                 .keyboardType(.URL)
+                                #endif
                             Stepper(value: $settings.stripeDepositCents, in: 50...500_000, step: 50) {
                                 Text("Deposit: \(formatDepositForDisplay(settings.stripeDepositCents))")
                             }
@@ -58,10 +90,14 @@ struct AdminSettingsView: View {
                                 Text("Live").tag("live")
                             }
                             TextField("Publishable key — test (pk_test_…)", text: $settings.stripePublishableKeyTest)
+                                #if os(iOS)
                                 .textInputAutocapitalization(.never)
+                                #endif
                                 .font(.system(.body, design: .monospaced))
                             TextField("Publishable key — live (pk_live_…)", text: $settings.stripePublishableKeyLive)
+                                #if os(iOS)
                                 .textInputAutocapitalization(.never)
+                                #endif
                                 .font(.system(.body, design: .monospaced))
                         } header: {
                             Text("Stripe checkout")
@@ -87,10 +123,20 @@ struct AdminSettingsView: View {
 
                                 VStack(alignment: .leading, spacing: 8) {
                                     Link(destination: URL(string: "https://dashboard.stripe.com/test/apikeys")!) {
-                                        Label("Open API keys (test mode)", systemImage: "arrow.up.right.square")
+                                        Label {
+                                            Text("Open API keys (test mode)")
+                                        } icon: {
+                                            Image(systemName: "arrow.up.right.square")
+                                                .symbolRenderingMode(.multicolor)
+                                        }
                                     }
                                     Link(destination: URL(string: "https://dashboard.stripe.com/apikeys")!) {
-                                        Label("Open API keys (live mode)", systemImage: "arrow.up.right.square")
+                                        Label {
+                                            Text("Open API keys (live mode)")
+                                        } icon: {
+                                            Image(systemName: "arrow.up.right.square")
+                                                .symbolRenderingMode(.multicolor)
+                                        }
                                     }
                                 }
                                 .font(.subheadline)
@@ -127,21 +173,6 @@ struct AdminSettingsView: View {
                             .disabled(saving)
                             .frame(maxWidth: .infinity)
                         }
-                    }
-                }
-            }
-            .navigationTitle("Settings")
-            .task { await load() }
-            .alert("Saved", isPresented: $success) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text("Settings saved. They will appear on the site and in the app.")
-            }
-            .sheet(item: $exportItem) { item in
-                ShareSheet(activityItems: [item.url]) {
-                    exportItem = nil
-                }
-            }
         }
     }
 

@@ -1,5 +1,9 @@
 import SwiftUI
+#if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct BookingSuccessView: View {
     let bookingRef: String
@@ -19,7 +23,7 @@ struct BookingSuccessView: View {
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 60))
-                    .foregroundStyle(accent)
+                    .symbolRenderingMode(.multicolor)
                 Text("Request Received!")
                     .font(.title2.bold())
                 Text("Your booking reference is:")
@@ -27,17 +31,21 @@ struct BookingSuccessView: View {
                 Text(bookingRef)
                     .font(.title.monospaced().bold())
                 Button {
-                    UIPasteboard.general.string = bookingRef
+                    copyBookingRefToPasteboard(bookingRef)
                     copied = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                 } label: {
-                    Label(copied ? "Copied!" : "Copy reference", systemImage: copied ? "checkmark.circle" : "doc.on.doc")
-                        .font(.subheadline.weight(.medium))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(accent)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
+                    HStack(spacing: 8) {
+                        Image(systemName: copied ? "checkmark.circle.fill" : "doc.on.doc")
+                            .symbolRenderingMode(.multicolor)
+                        Text(copied ? "Copied!" : "Copy reference")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(accent)
+                    .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
                 .disabled(copied)
@@ -78,7 +86,7 @@ struct BookingSuccessView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(.secondarySystemGroupedBackground))
+                    .background(depositSectionBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal, 4)
                 }
@@ -100,6 +108,25 @@ struct BookingSuccessView: View {
             publicSiteURL = s.stripePublicBaseUrl
             stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
         }
+    }
+
+    private var depositSectionBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.12)
+        #endif
+    }
+
+    private func copyBookingRefToPasteboard(_ ref: String) {
+        #if os(iOS)
+        UIPasteboard.general.string = ref
+        #elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(ref, forType: .string)
+        #endif
     }
 
     private func startCheckout() {

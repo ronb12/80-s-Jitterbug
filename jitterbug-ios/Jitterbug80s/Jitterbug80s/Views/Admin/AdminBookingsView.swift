@@ -1,8 +1,21 @@
 import SwiftUI
-import UIKit
 import UniformTypeIdentifiers
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 private let websiteBaseURL = "https://jitterbug80s.web.app"
+
+private func jbCopyStringToPasteboard(_ string: String) {
+    #if os(iOS)
+    UIPasteboard.general.string = string
+    #elseif os(macOS)
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(string, forType: .string)
+    #endif
+}
 
 struct AdminBookingsView: View {
     @State private var bookings: [Booking] = []
@@ -48,12 +61,17 @@ struct AdminBookingsView: View {
                             Button {
                                 showAddBooking = true
                             } label: {
-                                Label("Add booking", systemImage: "plus.circle.fill")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                        .symbolRenderingMode(.multicolor)
+                                    Text("Add booking")
+                                        .font(.headline)
+                                        .foregroundStyle(Color(red: 0.93, green: 0.28, blue: 0.6))
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
                             }
-                            .foregroundStyle(Color(red: 0.93, green: 0.28, blue: 0.6))
                         } header: {
                             Text("Manual booking")
                         } footer: {
@@ -99,9 +117,7 @@ struct AdminBookingsView: View {
                 AdminAddBookingSheet(onDismiss: { showAddBooking = false }, onAdded: { load(); showAddBooking = false })
             }
             .sheet(item: $exportItem) { item in
-                ShareSheet(activityItems: [item.url]) {
-                    exportItem = nil
-                }
+                ExportedFileShareSheet(exportURL: item.url, onDismiss: { exportItem = nil })
             }
             .task { load() }
         }
@@ -176,20 +192,6 @@ private struct ExportableURL: Identifiable {
     let url: URL
 }
 
-// MARK: - Share sheet for CSV export
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    var onComplete: (() -> Void)?
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-        vc.completionWithItemsHandler = { _, _, _, _ in onComplete?() }
-        return vc
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
 // MARK: - Add booking sheet
 struct AdminAddBookingSheet: View {
     var onDismiss: () -> Void
@@ -217,8 +219,15 @@ struct AdminAddBookingSheet: View {
             Form {
                 Section("Client") {
                     TextField("Name", text: $form.name)
-                    TextField("Email", text: $form.email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
-                    TextField("Phone", text: $form.phone).keyboardType(.phonePad)
+                    TextField("Email", text: $form.email)
+                        #if os(iOS)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                    TextField("Phone", text: $form.phone)
+                        #if os(iOS)
+                        .keyboardType(.phonePad)
+                        #endif
                 }
                 Section("Event") {
                     Picker("Event type", selection: $form.eventType) {
@@ -239,7 +248,13 @@ struct AdminAddBookingSheet: View {
                     }
                 }
                 Section("Message") {
-                    TextField("Additional details", text: $form.message, axis: .vertical).lineLimit(2...4)
+                    #if os(iOS)
+                    TextField("Additional details", text: $form.message, axis: .vertical)
+                        .lineLimit(2...4)
+                    #else
+                    TextField("Additional details", text: $form.message)
+                        .lineLimit(4)
+                    #endif
                 }
                 Section {
                     Toggle("Photo release consent", isOn: $form.photoReleaseConsent)
@@ -349,7 +364,7 @@ struct AdminBookingDetailView: View {
                         Text(booking.bookingRef).font(.headline.monospaced())
                         Spacer()
                         Button(copied ? "Copied" : "Copy ref") {
-                            UIPasteboard.general.string = booking.bookingRef
+                            jbCopyStringToPasteboard(booking.bookingRef)
                             copied = true
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
                         }
@@ -359,8 +374,15 @@ struct AdminBookingDetailView: View {
                 if isEditing {
                     Section("Client") {
                         TextField("Name", text: $editForm.name)
-                        TextField("Email", text: $editForm.email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
-                        TextField("Phone", text: $editForm.phone).keyboardType(.phonePad)
+                        TextField("Email", text: $editForm.email)
+                            #if os(iOS)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            #endif
+                        TextField("Phone", text: $editForm.phone)
+                            #if os(iOS)
+                            .keyboardType(.phonePad)
+                            #endif
                     }
                     Section("Event") {
                         Picker("Event type", selection: $editForm.eventType) {
@@ -379,7 +401,13 @@ struct AdminBookingDetailView: View {
                         }
                     }
                     Section("Message") {
-                        TextField("Details", text: $editForm.message, axis: .vertical).lineLimit(2...4)
+                        #if os(iOS)
+                        TextField("Details", text: $editForm.message, axis: .vertical)
+                            .lineLimit(2...4)
+                        #else
+                        TextField("Details", text: $editForm.message)
+                            .lineLimit(4)
+                        #endif
                     }
                     Section {
                         Toggle("Photo release consent", isOn: $editForm.photoReleaseConsent)
@@ -417,10 +445,12 @@ struct AdminBookingDetailView: View {
                             Button {
                                 openStripeDepositCheckout()
                             } label: {
-                                Label(
-                                    stripePayLoading ? "Preparing payment…" : "Customer: pay deposit (Stripe)",
-                                    systemImage: "creditcard"
-                                )
+                                Label {
+                                    Text(stripePayLoading ? "Preparing payment…" : "Customer: pay deposit (Stripe)")
+                                } icon: {
+                                    Image(systemName: "creditcard")
+                                        .symbolRenderingMode(.multicolor)
+                                }
                             }
                             .disabled(stripePayLoading)
                             if let stripePayError {
@@ -445,19 +475,34 @@ struct AdminBookingDetailView: View {
                     Button {
                         PrintService.printContract(booking: booking, ownerName: contactOwnerName, contactEmail: contactEmail, contactPhone: contactPhone)
                     } label: {
-                        Label("Print contract", systemImage: "doc.richtext")
+                        Label {
+                            Text("Print contract")
+                        } icon: {
+                            Image(systemName: "doc.richtext")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                     .disabled(contactEmail.isEmpty)
                     Button {
                         PrintService.printPhotoRelease(booking: booking, contactEmail: contactEmail, contactPhone: contactPhone)
                     } label: {
-                        Label("Print photo release", systemImage: "doc")
+                        Label {
+                            Text("Print photo release")
+                        } icon: {
+                            Image(systemName: "doc")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                     .disabled(contactEmail.isEmpty)
                 }
                 Section {
                     Button(role: .destructive, action: { showDeleteConfirm = true }) {
-                        Label("Delete booking", systemImage: "trash")
+                        Label {
+                            Text("Delete booking")
+                        } icon: {
+                            Image(systemName: "trash")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                 }
             }

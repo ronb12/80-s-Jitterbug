@@ -21,12 +21,17 @@ struct AdminPackagesView: View {
                             Button {
                                 addPackage()
                             } label: {
-                                Label("Add package", systemImage: "plus.circle.fill")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
+                                HStack {
+                                    Image(systemName: "plus.circle.fill")
+                                        .symbolRenderingMode(.multicolor)
+                                    Text("Add package")
+                                        .font(.headline)
+                                        .foregroundStyle(accentPink)
+                                    Spacer(minLength: 0)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
                             }
-                            .foregroundStyle(accentPink)
                         } header: {
                             Text("Packages & pricing")
                         } footer: {
@@ -145,7 +150,9 @@ private struct AdminPackageEditView: View {
             Section("Package") {
                 TextField("Name", text: $package.name)
                 TextField("Price", text: $package.price)
+                    #if os(iOS)
                     .keyboardType(.decimalPad)
+                    #endif
             }
             Section {
                 ForEach(Array(package.features.enumerated()), id: \.offset) { index, _ in
@@ -157,8 +164,12 @@ private struct AdminPackageEditView: View {
                     p.features.append("")
                     package = p
                 } label: {
-                    Label("Add what's included", systemImage: "plus.circle")
-                        .foregroundStyle(accentPink)
+                    HStack {
+                        Image(systemName: "plus.circle")
+                            .symbolRenderingMode(.multicolor)
+                        Text("Add what's included")
+                            .foregroundStyle(accentPink)
+                    }
                 }
             } header: {
                 Text("What's included")

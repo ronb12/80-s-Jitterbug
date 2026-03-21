@@ -2,6 +2,8 @@ import SwiftUI
 import PhotosUI
 import UniformTypeIdentifiers
 
+/// Owner gallery management still uses **Firestore**. The **customer** Gallery tab loads from **`GET {Public site URL}/api/data/gallery`** (Neon on Vercel) first. To keep them in sync, add photos via the **website admin** or point Firestore + API at the same data source.
+
 private struct ImageDataTransfer: Transferable {
     let data: Data
     static var transferRepresentation: some TransferRepresentation {
@@ -23,84 +25,110 @@ struct AdminGalleryView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if loading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        Section("Upload from photo library") {
-                            PhotosPicker(
-                                selection: $selectedPhotoItem,
-                                matching: .images,
-                                photoLibrary: .shared()
-                            ) {
-                                Label("Choose photo", systemImage: "photo.on.rectangle.angular")
-                            }
-                            TextField("Caption (optional)", text: $uploadCaption)
-                            if let msg = uploadError {
-                                Text(msg)
-                                    .foregroundStyle(.red)
-                                    .font(.caption)
+            galleryMainContent
+                .navigationTitle("Gallery")
+                .task { load() }
+                .onChange(of: selectedPhotoItem) { _, new in
+                    guard let item = new else { return }
+                    processPickedPhoto(item)
+                }
+                .sheet(item: $editingPhoto) { photo in
+                    NavigationStack {
+                        Form {
+                            Section("Caption") {
+                                #if os(iOS)
+                                TextField("Caption", text: $editCaption, axis: .vertical)
+                                    .lineLimit(2...4)
+                                #else
+                                TextField("Caption", text: $editCaption)
+                                    .lineLimit(4)
+                                #endif
                             }
                         }
-                        Section("Add photo by URL") {
-                            TextField("Image URL", text: $newUrl)
-                                .keyboardType(.URL)
-                                .textInputAutocapitalization(.never)
-                            TextField("Caption", text: $newCaption)
-                            Button("Add") { addPhoto() }
-                                .disabled(newUrl.trimmingCharacters(in: .whitespaces).isEmpty || adding)
-                        }
-                        Section("Gallery") {
-                            ForEach(photos) { photo in
-                                HStack {
-                                    AsyncImage(url: URL(string: photo.url)) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image.resizable().aspectRatio(contentMode: .fill)
-                                        case .failure:
-                                            Color.gray.opacity(0.3).overlay(Image(systemName: "photo"))
-                                        case .empty:
-                                            ProgressView()
-                                        @unknown default:
-                                            Color.gray.opacity(0.3)
-                                        }
-                                    }
-                                    .frame(width: 50, height: 50)
-                                        .clipped()
-                                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                                    Text(photo.caption.isEmpty ? "No caption" : photo.caption)
-                                        .lineLimit(1)
-                                    Spacer()
-                                    Button { editingPhoto = photo; editCaption = photo.caption } label: {
-                                        Image(systemName: "pencil")
-                                    }
-                                    Button(role: .destructive) { delete(photo) } label: { Image(systemName: "trash") }
-                                }
-                            }
+                        .navigationTitle("Edit caption")
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editingPhoto = nil } }
+                            ToolbarItem(placement: .confirmationAction) { Button("Save") { saveCaption(photo) } }
                         }
                     }
                 }
-            }
-            .navigationTitle("Gallery")
-            .task { load() }
-            .onChange(of: selectedPhotoItem) { _, new in
-                guard let item = new else { return }
-                processPickedPhoto(item)
-            }
-            .sheet(item: $editingPhoto) { photo in
-                NavigationStack {
-                    Form {
-                        Section("Caption") {
-                            TextField("Caption", text: $editCaption, axis: .vertical)
-                                .lineLimit(2...4)
-                        }
+        }
+    }
+
+    @ViewBuilder
+    private var galleryMainContent: some View {
+        if loading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            galleryList
+        }
+    }
+
+    private var galleryList: some View {
+        List {
+            Section("Upload from photo library") {
+                PhotosPicker(
+                    selection: $selectedPhotoItem,
+                    matching: .images,
+                    photoLibrary: .shared()
+                ) {
+                    Label {
+                        Text("Choose photo")
+                    } icon: {
+                        Image(systemName: "photo.on.rectangle.angular")
+                            .symbolRenderingMode(.multicolor)
                     }
-                    .navigationTitle("Edit caption")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editingPhoto = nil } }
-                        ToolbarItem(placement: .confirmationAction) { Button("Save") { saveCaption(photo) } }
+                }
+                TextField("Caption (optional)", text: $uploadCaption)
+                if let msg = uploadError {
+                    Text(msg)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                }
+            }
+            Section("Add photo by URL") {
+                TextField("Image URL", text: $newUrl)
+                    #if os(iOS)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                TextField("Caption", text: $newCaption)
+                Button("Add") { addPhoto() }
+                    .disabled(newUrl.trimmingCharacters(in: .whitespaces).isEmpty || adding)
+            }
+            Section("Gallery") {
+                ForEach(photos) { photo in
+                    HStack {
+                        AsyncImage(url: URL(string: photo.url)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            case .failure:
+                                Color.gray.opacity(0.3).overlay(
+                                    Image(systemName: "photo")
+                                        .symbolRenderingMode(.multicolor)
+                                )
+                            case .empty:
+                                ProgressView()
+                            @unknown default:
+                                Color.gray.opacity(0.3)
+                            }
+                        }
+                        .frame(width: 50, height: 50)
+                        .clipped()
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        Text(photo.caption.isEmpty ? "No caption" : photo.caption)
+                            .lineLimit(1)
+                        Spacer()
+                        Button { editingPhoto = photo; editCaption = photo.caption } label: {
+                            Image(systemName: "pencil")
+                                .symbolRenderingMode(.multicolor)
+                        }
+                        Button(role: .destructive) { delete(photo) } label: {
+                            Image(systemName: "trash")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                 }
             }

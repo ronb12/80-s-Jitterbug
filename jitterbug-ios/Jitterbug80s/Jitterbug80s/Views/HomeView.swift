@@ -1,14 +1,47 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+/// Replaces `Color(.systemGray6)` (UIKit-only) with an AppKit-friendly color on macOS.
+private enum JBHomeColors {
+    static var systemGray6: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.15)
+        #endif
+    }
+}
 
 private let accentPink = Color(red: 0.93, green: 0.28, blue: 0.6)
 private let serviceAreaFallback = "Augusta, GA and surrounding areas."
 
-private let featuredEvents: [(title: String, icon: String, desc: String)] = [
-    ("Weddings", "💒", "Say I do with style"),
-    ("Birthdays", "🎂", "Celebrate in neon"),
-    ("Corporate", "🏢", "Team building, retro style"),
-    ("Parties", "🎉", "Any occasion"),
+/// PNGs in `Assets.xcassets` (same emoji art as the site; bundled so they never render as “?”).
+private let featuredEvents: [(title: String, assetName: String, desc: String)] = [
+    ("Weddings", "IconWeddings", "Say I do with style"),
+    ("Birthdays", "IconBirthdays", "Celebrate in neon"),
+    ("Corporate", "IconCorporate", "Team building, retro style"),
+    ("Parties", "IconParties", "Any occasion"),
 ]
+
+/// Raster icons from the asset catalog (`Icon*.imageset`).
+private struct BundledEmojiIcon: View {
+    let name: String
+    var size: CGFloat = 44
+
+    var body: some View {
+        Image(name)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
 
 struct HomeView: View {
     var onBook: () -> Void
@@ -48,7 +81,9 @@ struct HomeView: View {
                 }
                 .padding(.bottom, 32)
             }
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     navTitleWithDiamonds
@@ -118,12 +153,19 @@ struct HomeView: View {
             .padding(.horizontal, 32)
             .padding(.top, 4)
 
-            // Sample booth visual
+            // Hero matches site 📸✨ using bundled PNGs (not Text emoji).
             VStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 12)
                     .fill(accentPink.opacity(0.2))
                     .aspectRatio(4/3, contentMode: .fit)
-                    .overlay(Text("📸✨").font(.system(size: 44)))
+                    .overlay {
+                        HStack(spacing: 16) {
+                            BundledEmojiIcon(name: "IconCamera", size: 56)
+                            BundledEmojiIcon(name: "IconSparkles", size: 48)
+                        }
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Camera and sparkles")
+                    }
                 Text("Your event. Your memories.")
                     .font(.subheadline)
                     .foregroundStyle(accentPink)
@@ -179,7 +221,7 @@ struct HomeView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(Color(.systemGray6))
+        .background(JBHomeColors.systemGray6)
         .padding(.vertical, 20)
     }
 
@@ -195,7 +237,7 @@ struct HomeView: View {
             ], spacing: 16) {
                 ForEach(featuredEvents, id: \.title) { e in
                     VStack(spacing: 8) {
-                        Text(e.icon).font(.system(size: 36))
+                        BundledEmojiIcon(name: e.assetName, size: 44)
                         Text(e.title)
                             .font(.headline)
                             .foregroundStyle(.primary)
@@ -205,7 +247,7 @@ struct HomeView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(20)
-                    .background(Color(.systemGray6))
+                    .background(JBHomeColors.systemGray6)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -245,13 +287,17 @@ struct HomeView: View {
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(.primary)
                             }
-                            Text("Unlimited photos • Props • Digital sharing")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 6) {
+                                Text("Unlimited photos").font(.caption).foregroundStyle(.secondary)
+                                Text("|").font(.caption2).foregroundStyle(.tertiary)
+                                Text("Props").font(.caption).foregroundStyle(.secondary)
+                                Text("|").font(.caption2).foregroundStyle(.tertiary)
+                                Text("Digital sharing").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(20)
-                        .background(Color(.systemGray6))
+                        .background(JBHomeColors.systemGray6)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
@@ -266,7 +312,7 @@ struct HomeView: View {
             }
         }
         .padding(.vertical, 28)
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(JBHomeColors.systemGray6.opacity(0.5))
     }
 
     private var galleryPreviewSection: some View {
@@ -284,7 +330,10 @@ struct HomeView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(accentPink.opacity(0.15))
                         .aspectRatio(1, contentMode: .fit)
-                        .overlay(Text("📸").font(.system(size: 32)))
+                        .overlay {
+                            BundledEmojiIcon(name: "IconGallery", size: 40)
+                                .opacity(0.88)
+                        }
                 }
             }
             .padding(.horizontal, 20)

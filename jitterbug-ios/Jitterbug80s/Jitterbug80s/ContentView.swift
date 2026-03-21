@@ -39,18 +39,29 @@ struct ContentView: View {
             )
             .environmentObject(auth)
         }
+        #if os(iOS)
         .fullScreenCover(isPresented: $showAdminHub) {
-            AdminTabView(
-                onLogout: {
-                    showAdminHub = false
-                    Task { try? await auth.signOut() }
-                },
-                onViewAsCustomer: {
-                    showAdminHub = false
-                }
-            )
-            .environmentObject(auth)
+            adminHubContent
         }
+        #else
+        .sheet(isPresented: $showAdminHub) {
+            adminHubContent
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private var adminHubContent: some View {
+        AdminTabView(
+            onLogout: {
+                showAdminHub = false
+                Task { try? await auth.signOut() }
+            },
+            onViewAsCustomer: {
+                showAdminHub = false
+            }
+        )
+        .environmentObject(auth)
     }
 
     private func openAdmin() {

@@ -1,5 +1,7 @@
 import SwiftUI
 
+private let tabAccent = Color(red: 0.93, green: 0.28, blue: 0.6)
+
 struct MainTabView: View {
     var onOpenAdmin: () -> Void
     var isAdmin: Bool = false
@@ -14,7 +16,14 @@ struct MainTabView: View {
                 .tabItem { Label("Packages", systemImage: "dollarsign.circle.fill") }
                 .tag(1)
             GalleryView(onBook: { selectedTab = 3 })
-                .tabItem { Label("Gallery", systemImage: "photo.fill") }
+                .tabItem {
+                    Label {
+                        Text("Gallery")
+                    } icon: {
+                        Image("IconGallery")
+                            .renderingMode(.original)
+                    }
+                }
                 .tag(2)
             BookView()
                 .tabItem { Label("Book", systemImage: "calendar.badge.plus") }
@@ -23,6 +32,6 @@ struct MainTabView: View {
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
                 .tag(4)
         }
-        .tint(Color(red: 0.93, green: 0.28, blue: 0.6))
+        .tint(tabAccent)
     }
 }

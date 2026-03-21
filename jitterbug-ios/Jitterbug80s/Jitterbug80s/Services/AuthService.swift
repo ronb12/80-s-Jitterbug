@@ -3,6 +3,17 @@ import Foundation
 import FirebaseAuth
 import FirebaseFirestore
 
+enum AuthServiceError: LocalizedError {
+    case firebaseNotConfigured
+
+    var errorDescription: String? {
+        switch self {
+        case .firebaseNotConfigured:
+            return "Firebase isn’t configured. Add a valid GoogleService-Info.plist (with a real API key) to the app target."
+        }
+    }
+}
+
 final class AuthService: ObservableObject {
     private var authStateListener: AuthStateDidChangeListenerHandle?
     @Published var currentUser: User?
@@ -42,7 +53,9 @@ final class AuthService: ObservableObject {
     }
 
     func signIn(email: String, password: String) async throws {
-        guard FirebaseManager.isConfigured else { return }
+        guard FirebaseManager.isConfigured else {
+            throw AuthServiceError.firebaseNotConfigured
+        }
         _ = try await FirebaseManager.shared.auth.signIn(
             withEmail: email.trimmingCharacters(in: .whitespacesAndNewlines),
             password: password
@@ -53,7 +66,13 @@ final class AuthService: ObservableObject {
     }
 
     func signOut() async throws {
-        guard FirebaseManager.isConfigured else { return }
+        guard FirebaseManager.isConfigured else {
+            await MainActor.run {
+                self.currentUser = nil
+                self.isAdmin = false
+            }
+            return
+        }
         if let uid = FirebaseManager.shared.auth.currentUser?.uid {
             try? await FirebaseManager.shared.db.collection("adminFCM").document(uid).delete()
         }

@@ -27,76 +27,93 @@ struct BookView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let ref = successRef, let bid = successId {
-                    BookingSuccessView(bookingRef: ref, bookingId: bid)
-                } else {
-                    Form {
-                        Section("Your details") {
-                            TextField("Name", text: $form.name)
-                            TextField("Email", text: $form.email)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                            TextField("Phone", text: $form.phone)
-                                .keyboardType(.phonePad)
-                        }
-                        Section("Event") {
-                            Picker("Event type", selection: $form.eventType) {
-                                Text("Select…").tag("")
-                                ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
-                            }
-                            DatePicker("Event date", selection: Binding(
-                                get: { Self.dateFromString(form.eventDate) ?? Date() },
-                                set: { form.eventDate = Self.stringFromDate($0) }
-                            ), displayedComponents: .date)
-                            TextField("Event location (city/venue)", text: $form.eventLocation)
-                            TextField("Full address", text: $form.eventAddress)
-                        }
-                        Section("Package") {
-                            Picker("Package", selection: $form.package) {
-                                Text("Select…").tag("")
-                                ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
-                            }
-                        }
-                        Section("Message") {
-                            TextField("Additional details", text: $form.message, axis: .vertical)
-                                .lineLimit(3...6)
-                        }
-                        Section {
-                            Toggle("I agree to the booking terms and photo release", isOn: $form.photoReleaseConsent)
-                            if form.photoReleaseConsent {
-                                Toggle("Photo release includes minors", isOn: $form.photoReleaseIncludesMinors)
-                            }
-                        }
-                        Section {
-                            Toggle("Notify me on this device when my deposit payment is received", isOn: $notifyWhenDepositPaid)
-                            Text("Optional. We’ll ask for notification permission after you submit. Your booking reference is used to verify this device — we don’t expose tokens in the public booking form.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+            mainBookingContent
+                .navigationTitle("Book Your Booth")
+                .task {
+                    async let types: () = loadEventTypes()
+                    async let pkgs: () = loadPackages()
+                    _ = await (types, pkgs)
+                }
+        }
+    }
 
-                        if let err = error {
-                            Section {
-                                Text(err)
-                                    .foregroundStyle(.red)
-                            }
-                        }
+    @ViewBuilder
+    private var mainBookingContent: some View {
+        if let ref = successRef, let bid = successId {
+            BookingSuccessView(bookingRef: ref, bookingId: bid)
+        } else {
+            bookingRequestForm
+        }
+    }
 
-                        Section {
-                            Button("Submit request") {
-                                submit()
-                            }
-                            .disabled(!isValid || submitting)
-                            .frame(maxWidth: .infinity)
-                        }
-                    }
+    @ViewBuilder
+    private var bookingRequestForm: some View {
+        Form {
+            Section("Your details") {
+                TextField("Name", text: $form.name)
+                TextField("Email", text: $form.email)
+                    #if os(iOS)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                TextField("Phone", text: $form.phone)
+                    #if os(iOS)
+                    .keyboardType(.phonePad)
+                    #endif
+            }
+            Section("Event") {
+                Picker("Event type", selection: $form.eventType) {
+                    Text("Select…").tag("")
+                    ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
+                }
+                DatePicker("Event date", selection: Binding(
+                    get: { Self.dateFromString(form.eventDate) ?? Date() },
+                    set: { form.eventDate = Self.stringFromDate($0) }
+                ), displayedComponents: .date)
+                TextField("Event location (city/venue)", text: $form.eventLocation)
+                TextField("Full address", text: $form.eventAddress)
+            }
+            Section("Package") {
+                Picker("Package", selection: $form.package) {
+                    Text("Select…").tag("")
+                    ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
                 }
             }
-            .navigationTitle("Book Your Booth")
-            .task {
-                async let types: () = loadEventTypes()
-                async let pkgs: () = loadPackages()
-                _ = await (types, pkgs)
+            Section("Message") {
+                #if os(iOS)
+                TextField("Additional details", text: $form.message, axis: .vertical)
+                    .lineLimit(3...6)
+                #else
+                TextField("Additional details", text: $form.message)
+                    .lineLimit(4)
+                #endif
+            }
+            Section {
+                Toggle("I agree to the booking terms and photo release", isOn: $form.photoReleaseConsent)
+                if form.photoReleaseConsent {
+                    Toggle("Photo release includes minors", isOn: $form.photoReleaseIncludesMinors)
+                }
+            }
+            Section {
+                Toggle("Notify me on this device when my deposit payment is received", isOn: $notifyWhenDepositPaid)
+                Text("Optional. We’ll ask for notification permission after you submit. Your booking reference is used to verify this device — we don’t expose tokens in the public booking form.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let err = error {
+                Section {
+                    Text(err)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            Section {
+                Button("Submit request") {
+                    submit()
+                }
+                .disabled(!isValid || submitting)
+                .frame(maxWidth: .infinity)
             }
         }
     }

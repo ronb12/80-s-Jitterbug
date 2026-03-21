@@ -1,4 +1,39 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+private enum JBDocumentsColors {
+    static var systemGray6: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.15)
+        #endif
+    }
+    static var systemBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #elseif os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color.white
+        #endif
+    }
+    static var separatorStroke: Color {
+        #if os(iOS)
+        Color(uiColor: .separator)
+        #elseif os(macOS)
+        Color(nsColor: .separatorColor)
+        #else
+        Color.gray.opacity(0.35)
+        #endif
+    }
+}
 
 private let websiteBaseURL = "https://jitterbug80s.web.app"
 
@@ -48,18 +83,33 @@ struct AdminDocumentsView: View {
                         let (email, phone) = contactInfoSplit(contactInfo)
                         PrintService.printContract(booking: sampleBooking, ownerName: ownerName, contactEmail: email, contactPhone: phone)
                     } label: {
-                        Label("Print preview (sample data)", systemImage: "doc.richtext")
+                        Label {
+                            Text("Print preview (sample data)")
+                        } icon: {
+                            Image(systemName: "doc.richtext")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                     .disabled(contactInfo.isEmpty)
                     Button {
                         let (email, phone) = contactInfoSplit(contactInfo)
                         PrintService.printPhotoRelease(booking: nil, contactEmail: email, contactPhone: phone)
                     } label: {
-                        Label("Print photo release (blank)", systemImage: "doc")
+                        Label {
+                            Text("Print photo release (blank)")
+                        } icon: {
+                            Image(systemName: "doc")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                     .disabled(contactInfo.isEmpty)
                     Link(destination: URL(string: "\(websiteBaseURL)/admin/documents")!) {
-                        Label("Open in Safari (alternative)", systemImage: "safari")
+                        Label {
+                            Text("Open in Safari (alternative)")
+                        } icon: {
+                            Image(systemName: "safari")
+                                .symbolRenderingMode(.multicolor)
+                        }
                     }
                     .font(.caption)
                     sampleContractPreview
@@ -92,14 +142,24 @@ struct AdminDocumentsView: View {
                                 let (email, phone) = contactInfoSplit(contactInfo)
                                 PrintService.printContract(booking: b, ownerName: ownerName, contactEmail: email, contactPhone: phone)
                             } label: {
-                                Label("Print real contract", systemImage: "doc.richtext")
+                                Label {
+                                    Text("Print real contract")
+                                } icon: {
+                                    Image(systemName: "doc.richtext")
+                                        .symbolRenderingMode(.multicolor)
+                                }
                             }
                             .disabled(contactInfo.isEmpty)
                             Button {
                                 let (email, phone) = contactInfoSplit(contactInfo)
                                 PrintService.printPhotoRelease(booking: b, contactEmail: email, contactPhone: phone)
                             } label: {
-                                Label("Print photo release", systemImage: "doc")
+                                Label {
+                                    Text("Print photo release")
+                                } icon: {
+                                    Image(systemName: "doc")
+                                        .symbolRenderingMode(.multicolor)
+                                }
                             }
                             .disabled(contactInfo.isEmpty)
                         }
@@ -123,6 +183,7 @@ struct AdminDocumentsView: View {
                             }
                             Spacer()
                             Image(systemName: "arrow.up.forward")
+                                .symbolRenderingMode(.multicolor)
                         }
                     }
                     Link(destination: URL(string: "\(websiteBaseURL)/terms")!) {
@@ -135,6 +196,7 @@ struct AdminDocumentsView: View {
                             }
                             Spacer()
                             Image(systemName: "arrow.up.forward")
+                                .symbolRenderingMode(.multicolor)
                         }
                     }
                     Link(destination: URL(string: "\(websiteBaseURL)/privacy")!) {
@@ -147,6 +209,7 @@ struct AdminDocumentsView: View {
                             }
                             Spacer()
                             Image(systemName: "arrow.up.forward")
+                                .symbolRenderingMode(.multicolor)
                         }
                     }
                 } header: {
@@ -210,7 +273,7 @@ struct AdminDocumentsView: View {
                         .font(.caption)
                         .padding(8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(.systemGray6))
+                        .background(JBDocumentsColors.systemGray6)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 Text("Client signature: _________________________  Date: _______________")
@@ -220,9 +283,12 @@ struct AdminDocumentsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxHeight: 400)
-        .background(Color(.systemBackground))
+        .background(JBDocumentsColors.systemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(.separator), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(JBDocumentsColors.separatorStroke, lineWidth: 1)
+        )
     }
 
     private func contractTable(rows: [(String, String)]) -> some View {

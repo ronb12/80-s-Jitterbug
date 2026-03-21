@@ -1,6 +1,6 @@
 //
 //  Jitterbug80sMacApp.swift
-//  Jitterbug80sMac (Mac Catalyst) — same UI as iOS; separate @main from Jitterbug80sApp.swift.
+//  Jitterbug80sMac — macOS build; same bundle ID as iOS (com.bradleyvirtualsolutions.Jitterbug80s).
 //
 
 import SwiftUI

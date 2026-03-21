@@ -1,6 +1,7 @@
 import SwiftUI
 
 private let adminTipsKey = "adminTipsShown"
+private let tabAccent = Color(red: 0.93, green: 0.28, blue: 0.6)
 
 struct AdminTabView: View {
     @EnvironmentObject var auth: AuthService
@@ -26,7 +27,14 @@ struct AdminTabView: View {
                 .tabItem { Label("Event types", systemImage: "tag") }
                 .tag(3)
             AdminGalleryView()
-                .tabItem { Label("Gallery", systemImage: "photo") }
+                .tabItem {
+                    Label {
+                        Text("Gallery")
+                    } icon: {
+                        Image("IconGallery")
+                            .renderingMode(.original)
+                    }
+                }
                 .tag(4)
             AdminDocumentsView()
                 .tabItem { Label("Documents", systemImage: "doc.text") }
@@ -35,20 +43,23 @@ struct AdminTabView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape") }
                 .tag(6)
         }
-        .tint(Color(red: 0.93, green: 0.28, blue: 0.6))
+        .tint(tabAccent)
         .toolbar {
+            #if os(iOS)
             ToolbarItem(placement: .topBarLeading) {
-                if let onViewAsCustomer = onViewAsCustomer {
-                    Button {
-                        onViewAsCustomer()
-                    } label: {
-                        Label("View as customer", systemImage: "person.crop.circle")
-                    }
-                }
+                viewAsCustomerToolbarButton
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Log out", action: onLogout)
             }
+            #else
+            ToolbarItem(placement: .navigation) {
+                viewAsCustomerToolbarButton
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button("Log out", action: onLogout)
+            }
+            #endif
         }
         .onAppear {
             if !UserDefaults.standard.bool(forKey: adminTipsKey) {
@@ -60,6 +71,22 @@ struct AdminTabView: View {
                 UserDefaults.standard.set(true, forKey: adminTipsKey)
                 showAdminTips = false
             })
+        }
+    }
+
+    @ViewBuilder
+    private var viewAsCustomerToolbarButton: some View {
+        if let onViewAsCustomer = onViewAsCustomer {
+            Button {
+                onViewAsCustomer()
+            } label: {
+                Label {
+                    Text("View as customer")
+                } icon: {
+                    Image(systemName: "person.crop.circle")
+                        .symbolRenderingMode(.multicolor)
+                }
+            }
         }
     }
 }

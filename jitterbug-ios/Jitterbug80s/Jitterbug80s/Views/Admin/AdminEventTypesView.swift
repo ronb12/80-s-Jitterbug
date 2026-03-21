@@ -11,58 +11,72 @@ struct AdminEventTypesView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if loading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        Section {
-                            Button {
-                                addType()
-                            } label: {
-                                Label("Add event type", systemImage: "plus.circle.fill")
-                                    .font(.headline)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                            }
-                            .foregroundStyle(accentPink)
-                        } header: {
-                            Text("Event types")
-                        } footer: {
-                            Text("These options appear in the booking form. Edit names below, swipe left to delete, then tap Save.")
-                        }
-
-                        Section("Your event types") {
-                            ForEach(types.indices, id: \.self) { i in
-                                TextField("Type", text: $types[i])
-                                    .textInputAutocapitalization(.words)
-                            }
-                            .onDelete(perform: delete)
-                        }
+            eventTypesMainContent
+                .navigationTitle("Event types")
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("Save") { save() }
+                            .disabled(saving || loading)
                     }
                 }
-            }
-            .navigationTitle("Event types")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Save") { save() }
-                        .disabled(saving || loading)
+                .task { load() }
+                .alert("Saved", isPresented: $saveSuccess) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Event types saved. They will appear in the booking form on the app and website.")
                 }
+                .alert("Error", isPresented: Binding(
+                    get: { saveError != nil },
+                    set: { if !$0 { saveError = nil } }
+                )) {
+                    Button("OK", role: .cancel) { saveError = nil }
+                } message: {
+                    Text(saveError ?? "")
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var eventTypesMainContent: some View {
+        if loading {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            eventTypesList
+        }
+    }
+
+    private var eventTypesList: some View {
+        List {
+            Section {
+                Button {
+                    addType()
+                } label: {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .symbolRenderingMode(.multicolor)
+                        Text("Add event type")
+                            .font(.headline)
+                            .foregroundStyle(accentPink)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                }
+            } header: {
+                Text("Event types")
+            } footer: {
+                Text("These options appear in the booking form. Edit names below, swipe left to delete, then tap Save.")
             }
-            .task { load() }
-            .alert("Saved", isPresented: $saveSuccess) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Event types saved. They will appear in the booking form on the app and website.")
-            }
-            .alert("Error", isPresented: Binding(
-                get: { saveError != nil },
-                set: { if !$0 { saveError = nil } }
-            )) {
-                Button("OK", role: .cancel) { saveError = nil }
-            } message: {
-                Text(saveError ?? "")
+
+            Section("Your event types") {
+                ForEach(types.indices, id: \.self) { i in
+                    TextField("Type", text: $types[i])
+                        #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                        #endif
+                }
+                .onDelete(perform: delete)
             }
         }
     }

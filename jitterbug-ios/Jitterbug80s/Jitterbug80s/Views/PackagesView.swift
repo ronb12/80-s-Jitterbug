@@ -1,4 +1,21 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+private enum JBPackagesColors {
+    static var systemGray6: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.15)
+        #endif
+    }
+}
 
 private let accentPink = Color(red: 0.93, green: 0.28, blue: 0.6)
 
@@ -137,8 +154,10 @@ struct PackagesView: View {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(featureList, id: \.self) { feature in
                     HStack(alignment: .top, spacing: 6) {
-                        Text("✓")
-                            .foregroundStyle(accentPink)
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.caption.weight(.semibold))
+                            .symbolRenderingMode(.multicolor)
+                            .accessibilityHidden(true)
                         Text(feature)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -161,7 +180,7 @@ struct PackagesView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
-        .background(Color(.systemGray6))
+        .background(JBPackagesColors.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)

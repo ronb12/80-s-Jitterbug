@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 private let accentPink = Color(red: 0.93, green: 0.28, blue: 0.6)
 
@@ -9,6 +14,36 @@ struct BookingLookupView: View {
     @State private var notFound = false
     @FocusState private var isFieldFocused: Bool
 
+    private var searchFieldBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.15)
+        #endif
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #elseif os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color.white
+        #endif
+    }
+
+    private var groupedScrollBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+        #elseif os(macOS)
+        Color(nsColor: .underPageBackgroundColor)
+        #else
+        Color.gray.opacity(0.08)
+        #endif
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 28) {
@@ -16,7 +51,7 @@ struct BookingLookupView: View {
                 VStack(spacing: 8) {
                     Image(systemName: "magnifyingglass.circle.fill")
                         .font(.system(size: 44))
-                        .foregroundStyle(accentPink)
+                        .symbolRenderingMode(.multicolor)
                     Text("Find your booking")
                         .font(.title2.weight(.semibold))
                     Text("Enter the reference number from your confirmation (e.g. JB-1234)")
@@ -31,12 +66,14 @@ struct BookingLookupView: View {
                 VStack(spacing: 20) {
                     TextField("Booking reference", text: $ref)
                         .textFieldStyle(.plain)
+                        #if os(iOS)
                         .textInputAutocapitalization(.characters)
+                        #endif
                         .autocorrectionDisabled()
                         .focused($isFieldFocused)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
-                        .background(Color(.systemGray6))
+                        .background(searchFieldBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .onChange(of: ref) { _, _ in
                             status = nil
@@ -50,21 +87,22 @@ struct BookingLookupView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             } else {
                                 Image(systemName: "arrow.right.circle.fill")
+                                    .symbolRenderingMode(.multicolor)
                                 Text("Check status")
                                     .fontWeight(.semibold)
+                                    .foregroundStyle(.white)
                             }
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(canSubmit ? accentPink : Color.gray.opacity(0.5))
-                        .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .disabled(!canSubmit)
                     .animation(.easeInOut(duration: 0.2), value: canSubmit)
                 }
                 .padding(24)
-                .background(Color(.systemBackground))
+                .background(cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
 
@@ -73,7 +111,7 @@ struct BookingLookupView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "info.circle.fill")
                             .font(.title3)
-                            .foregroundStyle(.orange)
+                            .symbolRenderingMode(.multicolor)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("No booking found")
                                 .font(.subheadline.weight(.medium))
@@ -110,7 +148,7 @@ struct BookingLookupView: View {
                         )
                     }
                     .padding(24)
-                    .background(Color(.systemBackground))
+                    .background(cardBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
                 }
@@ -118,9 +156,11 @@ struct BookingLookupView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(groupedScrollBackground)
         .navigationTitle("Booking Lookup")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     private var canSubmit: Bool {
@@ -151,7 +191,7 @@ struct BookingLookupView: View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
                 .font(.body)
-                .foregroundStyle(accentPink)
+                .symbolRenderingMode(.multicolor)
                 .frame(width: 24, alignment: .center)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

@@ -80,3 +80,21 @@ export const bookingPushTokens = pgTable("booking_push_tokens", {
   token: text("token").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
+
+/**
+ * App users (e.g. admins) stored in Neon for auditing / future server-side auth.
+ * Link to Firebase Auth via `firebaseUid` when both are used.
+ */
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  /** Firebase Auth UID when the account is linked */
+  firebaseUid: text("firebase_uid").unique(),
+  displayName: text("display_name"),
+  /** e.g. `admin`, `staff` */
+  role: text("role").notNull().default("admin"),
+  /** Optional JSON for app-specific flags */
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
