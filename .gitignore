@@ -9,12 +9,14 @@ build
 .env*
 !.env.example
 
-# Xcode / iOS
-**/xcuserdata/
+# Xcode / iOS (ignore all xcuserdata, including under *.xcodeproj/project.xcworkspace)
+**/xcuserdata/**
+*.xcuserstate
 **/DerivedData/
 jitterbug-ios/**/build/
 
 # Misc
+*.bak
 .DS_Store
 *.pem
 *.tsbuildinfo

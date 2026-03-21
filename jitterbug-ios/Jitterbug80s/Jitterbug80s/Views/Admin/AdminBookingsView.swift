@@ -1,0 +1,592 @@
+import SwiftUI
+import UIKit
+import UniformTypeIdentifiers
+
+private let websiteBaseURL = "https://jitterbug80s.web.app"
+
+struct AdminBookingsView: View {
+    @State private var bookings: [Booking] = []
+    @State private var loading = true
+    @State private var error: String?
+    @State private var filterStatus: BookingStatus?
+    @State private var searchText = ""
+    @State private var selectedBooking: Booking?
+    @State private var exportItem: ExportableURL?
+    @State private var showAddBooking = false
+
+    private var filtered: [Booking] {
+        var list = bookings
+        if let status = filterStatus {
+            list = list.filter { $0.status == status }
+        }
+        if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+            let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+            list = list.filter {
+                $0.name.lowercased().contains(q)
+                    || $0.email.lowercased().contains(q)
+                    || $0.phone.contains(q)
+                    || $0.bookingRef.uppercased().contains(q.uppercased())
+                    || $0.eventLocation.lowercased().contains(q)
+            }
+        }
+        return list
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if loading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List {
+                        Section {
+                            bookingStatsView
+                        }
+
+                        Section {
+                            Button {
+                                showAddBooking = true
+                            } label: {
+                                Label("Add booking", systemImage: "plus.circle.fill")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                            }
+                            .foregroundStyle(Color(red: 0.93, green: 0.28, blue: 0.6))
+                        } header: {
+                            Text("Manual booking")
+                        } footer: {
+                            Text("Create a new booking as the owner (e.g. from a phone call or in-person request).")
+                        }
+
+                        Section("Bookings") {
+                            ForEach(filtered) { b in
+                                Button {
+                                    selectedBooking = b
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(b.name).font(.headline)
+                                        Text(b.bookingRef).font(.caption.monospaced())
+                                        Text(b.eventDate).font(.caption2).foregroundStyle(.secondary)
+                                        Text(b.status.rawValue.capitalized)
+                                            .font(.caption2)
+                                            .foregroundStyle(statusColor(b.status))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .searchable(text: $searchText, prompt: "Name, email, phone, ref, location")
+                }
+            }
+            .navigationTitle("Bookings")
+            .toolbar {
+                Menu {
+                    Button("All") { filterStatus = nil }
+                    ForEach(BookingStatus.allCases, id: \.self) { s in
+                        Button(s.rawValue.capitalized) { filterStatus = s }
+                    }
+                } label: { Text("Filter") }
+                Button("Export CSV") { exportCSV() }
+                    .disabled(filtered.isEmpty)
+                Button("Add booking") { showAddBooking = true }
+            }
+            .sheet(item: $selectedBooking) { b in
+                AdminBookingDetailView(booking: b, onDismiss: { selectedBooking = nil }, onUpdated: { load() })
+            }
+            .sheet(isPresented: $showAddBooking) {
+                AdminAddBookingSheet(onDismiss: { showAddBooking = false }, onAdded: { load(); showAddBooking = false })
+            }
+            .sheet(item: $exportItem) { item in
+                ShareSheet(activityItems: [item.url]) {
+                    exportItem = nil
+                }
+            }
+            .task { load() }
+        }
+    }
+
+    private var bookingStatsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            let pending = bookings.filter { $0.status == .pending }.count
+            let confirmed = bookings.filter { $0.status == .confirmed }.count
+            let completed = bookings.filter { $0.status == .completed }.count
+            let declined = bookings.filter { $0.status == .declined }.count
+            let cancelled = bookings.filter { $0.status == .cancelled }.count
+            Text("\(pending) Pending · \(confirmed) Confirmed · \(completed) Completed · \(declined) Declined · \(cancelled) Cancelled")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if let next = nextUpcomingBooking {
+                Text("Next: \(next.eventDate) — \(next.eventType) — \(next.name)")
+                    .font(.subheadline.weight(.medium))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var nextUpcomingBooking: Booking? {
+        let today = ISO8601DateFormatter().string(from: Date()).prefix(10)
+        return bookings
+            .filter { $0.status == .confirmed && $0.eventDate >= today }
+            .sorted { $0.eventDate < $1.eventDate }
+            .first
+    }
+
+    private func statusColor(_ s: BookingStatus) -> Color {
+        switch s {
+        case .confirmed, .completed: return .green
+        case .declined, .cancelled: return .red
+        case .pending: return .orange
+        }
+    }
+
+    private func load() {
+        loading = true
+        Task {
+            do {
+                bookings = try await BookingService().listBookings()
+                await MainActor.run { loading = false }
+            } catch {
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    loading = false
+                }
+            }
+        }
+    }
+
+    private func exportCSV() {
+        let header = "Ref,Name,Email,Phone,Event Type,Date,Location,Address,Package,Status,Message,Created\n"
+        let rows = filtered.map { b in
+            [b.bookingRef, b.name, b.email, b.phone, b.eventType, b.eventDate, b.eventLocation, b.eventAddress, b.package, b.status.rawValue, b.message.replacingOccurrences(of: "\"", with: "\"\""), b.createdAt]
+                .map { "\"\(String(describing: $0).replacingOccurrences(of: "\"", with: "\"\""))\"" }
+                .joined(separator: ",")
+        }
+        let csv = header + rows.joined(separator: "\n")
+        let fileName = "bookings-\(ISO8601DateFormatter().string(from: Date()).prefix(10)).csv"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try? csv.write(to: url, atomically: true, encoding: .utf8)
+        exportItem = ExportableURL(url: url)
+    }
+}
+
+private struct ExportableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+// MARK: - Share sheet for CSV export
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+    var onComplete: (() -> Void)?
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let vc = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+        vc.completionWithItemsHandler = { _, _, _, _ in onComplete?() }
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Add booking sheet
+struct AdminAddBookingSheet: View {
+    var onDismiss: () -> Void
+    var onAdded: () -> Void
+    @State private var form = BookingFormData()
+    @State private var eventTypes: [String] = []
+    @State private var packages: [PackagePrice] = []
+    @State private var adding = false
+    @State private var error: String?
+
+    private var isValid: Bool {
+        !form.name.trimmingCharacters(in: .whitespaces).isEmpty
+            && !form.email.trimmingCharacters(in: .whitespaces).isEmpty
+            && form.email.contains("@")
+            && !form.phone.trimmingCharacters(in: .whitespaces).isEmpty
+            && !form.eventType.isEmpty
+            && !form.eventDate.isEmpty
+            && !form.eventLocation.trimmingCharacters(in: .whitespaces).isEmpty
+            && !form.eventAddress.trimmingCharacters(in: .whitespaces).isEmpty
+            && !form.package.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Client") {
+                    TextField("Name", text: $form.name)
+                    TextField("Email", text: $form.email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                    TextField("Phone", text: $form.phone).keyboardType(.phonePad)
+                }
+                Section("Event") {
+                    Picker("Event type", selection: $form.eventType) {
+                        Text("Select…").tag("")
+                        ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
+                    }
+                    DatePicker("Event date", selection: Binding(
+                        get: { Self.dateFromString(form.eventDate) ?? Date() },
+                        set: { form.eventDate = Self.stringFromDate($0) }
+                    ), displayedComponents: .date)
+                    TextField("Event location", text: $form.eventLocation)
+                    TextField("Full address", text: $form.eventAddress)
+                }
+                Section("Package") {
+                    Picker("Package", selection: $form.package) {
+                        Text("Select…").tag("")
+                        ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
+                    }
+                }
+                Section("Message") {
+                    TextField("Additional details", text: $form.message, axis: .vertical).lineLimit(2...4)
+                }
+                Section {
+                    Toggle("Photo release consent", isOn: $form.photoReleaseConsent)
+                    if form.photoReleaseConsent {
+                        Toggle("Includes minors", isOn: $form.photoReleaseIncludesMinors)
+                    }
+                }
+                if let err = error {
+                    Section { Text(err).foregroundStyle(.red) }
+                }
+            }
+            .navigationTitle("Add booking")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") { add() }
+                        .disabled(!isValid || adding)
+                }
+            }
+            .task {
+                eventTypes = await EventTypesService().getEventTypes()
+                packages = await PackagesService().getPackages()
+                if form.eventType.isEmpty, let f = eventTypes.first { form.eventType = f }
+                if form.package.isEmpty, let p = packages.first { form.package = p.id }
+            }
+        }
+    }
+
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+    private static func dateFromString(_ s: String) -> Date? {
+        guard !s.isEmpty else { return nil }
+        return dateFormatter.date(from: s) ?? ISO8601DateFormatter().date(from: s)
+    }
+    private static func stringFromDate(_ d: Date) -> String { dateFormatter.string(from: d) }
+
+    private func add() {
+        error = nil
+        adding = true
+        Task {
+            do {
+                _ = try await BookingService().submitBooking(form)
+                await MainActor.run { onAdded() }
+            } catch {
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    adding = false
+                }
+            }
+        }
+    }
+}
+
+struct AdminBookingDetailView: View {
+    let booking: Booking
+    var onDismiss: () -> Void
+    var onUpdated: () -> Void
+    @State private var status: BookingStatus
+    @State private var depositPaid: Bool
+    @State private var balancePaid: Bool
+    @State private var saving = false
+    @State private var isEditing = false
+    @State private var editForm: BookingFormData
+    @State private var showDeleteConfirm = false
+    @State private var copied = false
+    @State private var eventTypes: [String] = []
+    @State private var packages: [PackagePrice] = []
+    @State private var contactOwnerName = ""
+    @State private var contactEmail = ""
+    @State private var contactPhone = ""
+    @State private var stripeCheckoutEnabled = false
+    @State private var stripePublicSiteURL = SiteSettings.default.stripePublicBaseUrl
+    @State private var stripePayLoading = false
+    @State private var stripePayError: String?
+
+    init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
+        self.booking = booking
+        self.onDismiss = onDismiss
+        self.onUpdated = onUpdated
+        _status = State(initialValue: booking.status)
+        _depositPaid = State(initialValue: booking.depositPaid ?? false)
+        _balancePaid = State(initialValue: booking.balancePaid ?? false)
+        var f = BookingFormData()
+        f.name = booking.name
+        f.email = booking.email
+        f.phone = booking.phone
+        f.eventType = booking.eventType
+        f.eventDate = booking.eventDate
+        f.eventLocation = booking.eventLocation
+        f.eventAddress = booking.eventAddress
+        f.package = booking.package
+        f.message = booking.message
+        f.photoReleaseConsent = booking.photoReleaseConsent
+        f.photoReleaseIncludesMinors = booking.photoReleaseIncludesMinors
+        _editForm = State(initialValue: f)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Reference") {
+                    HStack {
+                        Text(booking.bookingRef).font(.headline.monospaced())
+                        Spacer()
+                        Button(copied ? "Copied" : "Copy ref") {
+                            UIPasteboard.general.string = booking.bookingRef
+                            copied = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
+                        }
+                        .disabled(copied)
+                    }
+                }
+                if isEditing {
+                    Section("Client") {
+                        TextField("Name", text: $editForm.name)
+                        TextField("Email", text: $editForm.email).keyboardType(.emailAddress).textInputAutocapitalization(.never)
+                        TextField("Phone", text: $editForm.phone).keyboardType(.phonePad)
+                    }
+                    Section("Event") {
+                        Picker("Event type", selection: $editForm.eventType) {
+                            ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
+                        }
+                        DatePicker("Event date", selection: Binding(
+                            get: { DetailView.dateFromString(editForm.eventDate) ?? Date() },
+                            set: { editForm.eventDate = DetailView.stringFromDate($0) }
+                        ), displayedComponents: .date)
+                        TextField("Event location", text: $editForm.eventLocation)
+                        TextField("Full address", text: $editForm.eventAddress)
+                    }
+                    Section("Package") {
+                        Picker("Package", selection: $editForm.package) {
+                            ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
+                        }
+                    }
+                    Section("Message") {
+                        TextField("Details", text: $editForm.message, axis: .vertical).lineLimit(2...4)
+                    }
+                    Section {
+                        Toggle("Photo release consent", isOn: $editForm.photoReleaseConsent)
+                        if editForm.photoReleaseConsent {
+                            Toggle("Includes minors", isOn: $editForm.photoReleaseIncludesMinors)
+                        }
+                    }
+                    Section("Status") {
+                        Picker("Status", selection: $status) {
+                            ForEach(BookingStatus.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
+                        }
+                    }
+                } else {
+                    Section("Details") {
+                        LabeledContent("Name", value: booking.name)
+                        LabeledContent("Email", value: booking.email)
+                        LabeledContent("Phone", value: booking.phone)
+                        LabeledContent("Event type", value: booking.eventType)
+                        LabeledContent("Date", value: booking.eventDate)
+                        LabeledContent("Location", value: booking.eventLocation)
+                        LabeledContent("Address", value: booking.eventAddress)
+                        LabeledContent("Package", value: booking.package)
+                        if !booking.message.isEmpty {
+                            LabeledContent("Message", value: booking.message)
+                        }
+                    }
+                    Section("Status") {
+                        Picker("Status", selection: $status) {
+                            ForEach(BookingStatus.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
+                        }
+                        .onChange(of: status) { _, new in saveStatus(new) }
+                    }
+                    Section("Payment") {
+                        if stripeCheckoutEnabled && !depositPaid {
+                            Button {
+                                openStripeDepositCheckout()
+                            } label: {
+                                Label(
+                                    stripePayLoading ? "Opening Stripe…" : "Customer: pay deposit (Stripe)",
+                                    systemImage: "safari"
+                                )
+                            }
+                            .disabled(stripePayLoading)
+                            if let stripePayError {
+                                Text(stripePayError)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+                            Text("Opens Stripe Checkout in Safari for this booking. Requires Cloud Functions and secrets (see STRIPE-SETUP.md).")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        Toggle("Deposit paid", isOn: $depositPaid)
+                            .onChange(of: depositPaid) { _, _ in savePaymentFlags() }
+                        Toggle("Balance paid", isOn: $balancePaid)
+                            .onChange(of: balancePaid) { _, _ in savePaymentFlags() }
+                    }
+                }
+                Section {
+                    Link("Email client", destination: URL(string: "mailto:\(booking.email)")!)
+                }
+                Section("Print") {
+                    Button {
+                        PrintService.printContract(booking: booking, ownerName: contactOwnerName, contactEmail: contactEmail, contactPhone: contactPhone)
+                    } label: {
+                        Label("Print contract", systemImage: "doc.richtext")
+                    }
+                    .disabled(contactEmail.isEmpty)
+                    Button {
+                        PrintService.printPhotoRelease(booking: booking, contactEmail: contactEmail, contactPhone: contactPhone)
+                    } label: {
+                        Label("Print photo release", systemImage: "doc")
+                    }
+                    .disabled(contactEmail.isEmpty)
+                }
+                Section {
+                    Button(role: .destructive, action: { showDeleteConfirm = true }) {
+                        Label("Delete booking", systemImage: "trash")
+                    }
+                }
+            }
+            .navigationTitle(booking.name)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    if isEditing {
+                        Button("Cancel") { isEditing = false }
+                    } else {
+                        Button("Done", action: onDismiss)
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    if isEditing {
+                        Button("Save") { saveEdit() }
+                            .disabled(saving)
+                    } else {
+                        Button("Edit") { isEditing = true }
+                    }
+                }
+            }
+            .onChange(of: isEditing) { _, editing in
+                if editing {
+                    Task {
+                        eventTypes = await EventTypesService().getEventTypes()
+                        packages = await PackagesService().getPackages()
+                    }
+                }
+            }
+            .alert("Delete booking?", isPresented: $showDeleteConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) { deleteBooking() }
+            } message: {
+                Text("This cannot be undone.")
+            }
+            .task {
+                let s = await SettingsService().getSiteSettings()
+                contactOwnerName = s.ownerName
+                contactEmail = s.contactEmail
+                contactPhone = s.contactPhone
+                stripeCheckoutEnabled = s.stripeCheckoutEnabled
+                stripePublicSiteURL = s.stripePublicBaseUrl
+            }
+        }
+    }
+
+    private func openStripeDepositCheckout() {
+        stripePayError = nil
+        stripePayLoading = true
+        Task {
+            do {
+                let url = try await StripeCheckoutService().createCheckoutURL(
+                    bookingId: booking.id,
+                    publicSiteBaseURL: stripePublicSiteURL
+                )
+                await MainActor.run {
+                    stripePayLoading = false
+                    UIApplication.shared.open(url)
+                }
+            } catch {
+                await MainActor.run {
+                    stripePayLoading = false
+                    stripePayError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func savePaymentFlags() {
+        Task {
+            try? await BookingService().updateBooking(id: booking.id, data: [
+                "depositPaid": depositPaid,
+                "balancePaid": balancePaid
+            ])
+            await MainActor.run { onUpdated() }
+        }
+    }
+
+    private enum DetailView {
+        static let dateFormatter: DateFormatter = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            return f
+        }()
+        static func dateFromString(_ s: String) -> Date? {
+            guard !s.isEmpty else { return nil }
+            return dateFormatter.date(from: s) ?? ISO8601DateFormatter().date(from: s)
+        }
+        static func stringFromDate(_ d: Date) -> String { dateFormatter.string(from: d) }
+    }
+
+    private func saveStatus(_ s: BookingStatus) {
+        saving = true
+        Task {
+            try? await BookingService().updateBooking(id: booking.id, data: ["status": s.rawValue])
+            await MainActor.run { saving = false; onUpdated() }
+        }
+    }
+
+    private func saveEdit() {
+        saving = true
+        Task {
+            do {
+                try await BookingService().updateBooking(id: booking.id, data: [
+                    "name": editForm.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "email": editForm.email.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "phone": editForm.phone.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "eventType": editForm.eventType,
+                    "eventDate": editForm.eventDate,
+                    "eventLocation": editForm.eventLocation.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "eventAddress": editForm.eventAddress.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "package": editForm.package,
+                    "message": editForm.message.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "photoReleaseConsent": editForm.photoReleaseConsent,
+                    "photoReleaseIncludesMinors": editForm.photoReleaseIncludesMinors,
+                    "status": status.rawValue,
+                    "depositPaid": depositPaid,
+                    "balancePaid": balancePaid
+                ])
+                await MainActor.run { saving = false; isEditing = false; onUpdated() }
+            } catch {
+                await MainActor.run { saving = false }
+            }
+        }
+    }
+
+    private func deleteBooking() {
+        Task {
+            try? await BookingService().deleteBooking(id: booking.id)
+            await MainActor.run { onDismiss(); onUpdated() }
+        }
+    }
+}

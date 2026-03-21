@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>908905736157-v8n9bf8epe23nrepuv5oauqv1churcrm.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.908905736157-v8n9bf8epe23nrepuv5oauqv1churcrm</string>
+	<key>API_KEY</key>
+	<string>AIzaSyA-SLKpXe3f2yyOYeIEQUusYSPxQGdcy4o</string>
+	<key>GCM_SENDER_ID</key>
+	<string>908905736157</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.bradleyvirtualsolutions.Jitterbug80s</string>
+	<key>PROJECT_ID</key>
+	<string>jitterbug80s</string>
+	<key>STORAGE_BUCKET</key>
+	<string>jitterbug80s.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:908905736157:ios:c4d914757536191d68f834</string>
+</dict>
+</plist>
