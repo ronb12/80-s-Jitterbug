@@ -9,6 +9,8 @@ struct BookView: View {
     @State private var error: String?
     @State private var successRef: String?
     @State private var successId: String?
+    /// Opt-in: register this device for a push when the deposit is paid (requires notification permission).
+    @State private var notifyWhenDepositPaid = false
 
     private var isValid: Bool {
         !form.name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -65,6 +67,12 @@ struct BookView: View {
                             if form.photoReleaseConsent {
                                 Toggle("Photo release includes minors", isOn: $form.photoReleaseIncludesMinors)
                             }
+                        }
+                        Section {
+                            Toggle("Notify me on this device when my deposit payment is received", isOn: $notifyWhenDepositPaid)
+                            Text("Optional. We’ll ask for notification permission after you submit. Your booking reference is used to verify this device — we don’t expose tokens in the public booking form.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
 
                         if let err = error {
@@ -123,6 +131,14 @@ struct BookView: View {
         Task {
             do {
                 let (ref, id) = try await BookingService().submitBooking(form)
+                if notifyWhenDepositPaid {
+                    let site = await SettingsService().getSiteSettings()
+                    await PushNotificationService.shared.registerCustomerForDepositNotifications(
+                        bookingId: id,
+                        bookingRef: ref,
+                        publicSiteBaseURL: site.stripePublicBaseUrl
+                    )
+                }
                 await MainActor.run {
                     successRef = ref
                     successId = id

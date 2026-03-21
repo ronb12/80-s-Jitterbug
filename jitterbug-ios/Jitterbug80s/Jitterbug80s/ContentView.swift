@@ -43,7 +43,7 @@ struct ContentView: View {
             AdminTabView(
                 onLogout: {
                     showAdminHub = false
-                    try? auth.signOut()
+                    Task { try? await auth.signOut() }
                 },
                 onViewAsCustomer: {
                     showAdminHub = false

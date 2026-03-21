@@ -25,3 +25,5 @@ Your site will be live at **https://jitterbug80s.web.app** (or your configured F
 **If `firebase deploy` fails:** run `firebase login` first. Ensure `firebase.json` exists and that the build produced an `out` folder (your `next.config` should use `output: 'export'` for static hosting).
 
 **Stripe deposits:** After the first functions deploy, set secrets and webhooks per **`STRIPE-SETUP.md`**. Deploy updated Firestore rules with `firebase deploy --only firestore:rules` if you changed `firestore.rules`.
+
+**Push (FCM):** Functions `onBookingCreatedPush`, `onBookingUpdatedPush`, and `registerBookingPushToken` deploy with `functions`; hosting must include the `/api/registerBookingPushToken` rewrite (see `firebase.json`). iOS setup: **`jitterbug-ios/IOS-PUSH.md`**.

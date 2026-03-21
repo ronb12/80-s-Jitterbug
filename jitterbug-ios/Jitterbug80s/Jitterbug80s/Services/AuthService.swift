@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 
 final class AuthService: ObservableObject {
     private var authStateListener: AuthStateDidChangeListenerHandle?
@@ -26,6 +27,11 @@ final class AuthService: ObservableObject {
         authStateListener = auth.addStateDidChangeListener { [weak self] _, user in
             self?.currentUser = user
             self?.isAdmin = user != nil
+            if user != nil {
+                Task {
+                    await PushNotificationService.shared.registerAdminDeviceIfPossible()
+                }
+            }
         }
     }
 
@@ -42,11 +48,19 @@ final class AuthService: ObservableObject {
             password: password
         )
         await MainActor.run { self.isAdmin = true }
+        // Auth listener also triggers admin FCM registration; explicit call covers edge cases.
+        await PushNotificationService.shared.registerAdminDeviceIfPossible()
     }
 
-    func signOut() throws {
+    func signOut() async throws {
         guard FirebaseManager.isConfigured else { return }
+        if let uid = FirebaseManager.shared.auth.currentUser?.uid {
+            try? await FirebaseManager.shared.db.collection("adminFCM").document(uid).delete()
+        }
         try FirebaseManager.shared.auth.signOut()
-        isAdmin = false
+        await MainActor.run {
+            self.currentUser = nil
+            self.isAdmin = false
+        }
     }
 }

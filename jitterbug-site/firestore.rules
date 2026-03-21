@@ -19,5 +19,13 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if request.auth != null;
     }
+    // Admin devices: each signed-in admin stores one FCM token (MVP) for booking/deposit alerts.
+    match /adminFCM/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Customer deposit notifications: only Cloud Functions (HTTPS registerBookingPushToken) may write.
+    match /bookings/{bookingId}/notifyTokens/{tokenDoc} {
+      allow read, write: if false;
+    }
   }
 }

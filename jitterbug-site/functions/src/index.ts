@@ -309,3 +309,10 @@ export const stripeWebhook = onRequest(
     res.json({ received: true });
   }
 );
+
+/** FCM: admin new-booking / deposit-paid + customer deposit opt-in (see push.ts). */
+export {
+  onBookingCreatedPush,
+  onBookingUpdatedPush,
+  registerBookingPushToken,
+} from "./push";

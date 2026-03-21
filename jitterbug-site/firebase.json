@@ -35,6 +35,13 @@
           "functionId": "stripeWebhook",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/api/registerBookingPushToken",
+        "function": {
+          "functionId": "registerBookingPushToken",
+          "region": "us-central1"
+        }
       }
     ]
   }
