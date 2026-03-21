@@ -23,6 +23,13 @@
         }
       },
       {
+        "source": "/api/stripePaymentIntent",
+        "function": {
+          "functionId": "stripePaymentIntent",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/stripeWebhook",
         "function": {
           "functionId": "stripeWebhook",

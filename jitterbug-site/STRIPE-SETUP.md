@@ -1,8 +1,11 @@
 # Stripe checkout (deposit)
 
-Bookings are still created in Firestore as before. When **Enable "Pay deposit"** is on in **Admin → Settings**, customers see **Pay deposit with card** after submitting the booking form. That opens **Stripe Checkout** (hosted by Stripe).
+Bookings are still created in Firestore as before. When **Enable "Pay deposit"** is on in **Admin → Settings**:
 
-Checkout and webhooks run in **Firebase Cloud Functions** (this project uses static hosting, so there is no Next.js API route).
+- **Website:** **Pay deposit with card** opens **Stripe Checkout** in the browser (hosted by Stripe).
+- **iOS app:** **Pay deposit with card** opens **Stripe Payment Sheet** inside the app. The card is still charged by **Stripe**; the app never sees your secret key.
+
+API routes and webhooks run in **Firebase Cloud Functions** (static hosting, no Next.js payment API). If you prefer not to use Firebase for creating payment sessions, host an equivalent `POST` that returns `{ "clientSecret": "…" }` and point the app at that URL (custom work — see `jitterbug-ios/IOS-STRIPE-NATIVE.md`).
 
 ## 1. Stripe Dashboard
 
@@ -24,7 +27,9 @@ These are the keys you paste into **Admin → Settings** in the iOS app (or into
 3. **Developers → Webhooks → Add endpoint**  
    - URL: `https://YOUR_PROJECT.web.app/api/stripeWebhook`  
      (or your custom domain + `/api/stripeWebhook`)  
-   - Events: `checkout.session.completed`  
+   - Events: enable **both**  
+     - `checkout.session.completed` (website hosted Checkout)  
+     - `payment_intent.succeeded` (iOS Payment Sheet)  
    - Copy the **Signing secret** (`whsec_…`) — this is `STRIPE_WEBHOOK_SECRET`, not a Firestore field.
 
 ## 2. Firebase secrets (secret keys only here)
@@ -53,7 +58,8 @@ firebase deploy --only functions
 
 `firebase.json` already maps:
 
-- `/api/stripeCheckout` → `stripeCheckout` function  
+- `/api/stripeCheckout` → `stripeCheckout` function (browser Checkout session + `url`)  
+- `/api/stripePaymentIntent` → `stripePaymentIntent` function (iOS Payment Sheet + `clientSecret`)  
 - `/api/stripeWebhook` → `stripeWebhook` function  
 
 Deploy hosting **and** functions:
@@ -69,6 +75,7 @@ In **Admin → Settings** (web or iOS):
 
 - Turn on **Enable "Pay deposit"** after secrets are set and functions are deployed.
 - Set **Public site URL** to your real URL (e.g. `https://jitterbug80s.web.app`).
+- Paste **publishable keys** (`pk_test_…` / `pk_live_…`) for the iOS Payment Sheet (must match test vs live mode).
 - **Deposit amount** is in **USD cents** (default 5000 = $50). It will not exceed the selected package price when the price can be parsed from `settings/packages`.
 
 ## Security
@@ -78,15 +85,15 @@ In **Admin → Settings** (web or iOS):
 
 ## iOS app
 
-The app uses the same `POST …/api/stripeCheckout` endpoint as the website:
+The app uses **`POST …/api/stripePaymentIntent`** with `{"bookingId":"…"}` and receives a **PaymentIntent** `clientSecret`, then presents **Stripe Payment Sheet** in-app (not Safari).
 
-- After a customer submits **Book Your Booth**, **Booking success** shows **Pay deposit with card** when **Enable "Pay deposit"** is on in **Admin → Settings** (synced from Firestore).
-- In **Admin → Bookings →** a booking, **Customer: pay deposit (Stripe)** opens Safari to Checkout for that Firestore `bookingId`.
+- After **Book Your Booth**, **Booking success** shows **Pay deposit with card** when checkout is enabled.
+- **Admin → Bookings → Customer: pay deposit (Stripe)** uses the same flow.
 
-Ensure **Public site URL** in settings matches the Firebase Hosting domain where functions are deployed (e.g. `https://jitterbug80s.web.app`).
+Ensure **Public site URL** matches hosting where `stripePaymentIntent` is deployed, and **publishable key** in Admin → Settings matches your Stripe mode (`STRIPE_SECRET_KEY` test vs live). See **`jitterbug-ios/STRIPE-CHECKOUT-TEST-IOS.md`** and **`jitterbug-ios/IOS-STRIPE-NATIVE.md`**.
 
 ## Going live
 
 - Replace test `STRIPE_SECRET_KEY` with `sk_live_…` (new secret version / redeploy).
 - Add a **live** webhook endpoint pointing to the same `/api/stripeWebhook` path on your production domain.
-- Use **live** publishable key in admin if you add client-side Stripe later.
+- Use **live** publishable key in Admin → Settings for live iOS Payment Sheet; website Checkout uses the same secret key via Functions.

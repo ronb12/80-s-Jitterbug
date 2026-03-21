@@ -7,6 +7,8 @@ struct BookingSuccessView: View {
     @State private var copied = false
     @State private var stripeCheckoutEnabled = false
     @State private var publicSiteURL = SiteSettings.default.stripePublicBaseUrl
+    /// Publishable key for Stripe Payment Sheet (must match test/live mode).
+    @State private var stripePublishableKey = ""
     @State private var payLoading = false
     @State private var payError: String?
 
@@ -50,7 +52,7 @@ struct BookingSuccessView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Pay your deposit")
                             .font(.subheadline.weight(.semibold))
-                        Text("Secure checkout with Stripe. You can skip this and pay later—we'll follow up by email.")
+                        Text("Pay in the app with Stripe (Apple Pay or card). You can skip this and pay later—we'll follow up by email.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         if let payError {
@@ -63,7 +65,7 @@ struct BookingSuccessView: View {
                         } label: {
                             HStack {
                                 if payLoading { ProgressView().tint(.white) }
-                                Text(payLoading ? "Opening checkout…" : "Pay deposit with card")
+                                Text(payLoading ? "Preparing payment…" : "Pay deposit with card")
                                     .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
@@ -96,6 +98,7 @@ struct BookingSuccessView: View {
             let s = await SettingsService().getSiteSettings()
             stripeCheckoutEnabled = s.stripeCheckoutEnabled
             publicSiteURL = s.stripePublicBaseUrl
+            stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
         }
     }
 
@@ -104,13 +107,16 @@ struct BookingSuccessView: View {
         payLoading = true
         Task {
             do {
-                let url = try await StripeCheckoutService().createCheckoutURL(
+                let completed = try await StripeNativePayment.presentDepositSheet(
                     bookingId: bookingId,
-                    publicSiteBaseURL: publicSiteURL
+                    publicSiteBaseURL: publicSiteURL,
+                    publishableKey: stripePublishableKey
                 )
                 await MainActor.run {
                     payLoading = false
-                    UIApplication.shared.open(url)
+                    if completed {
+                        payError = nil
+                    }
                 }
             } catch {
                 await MainActor.run {

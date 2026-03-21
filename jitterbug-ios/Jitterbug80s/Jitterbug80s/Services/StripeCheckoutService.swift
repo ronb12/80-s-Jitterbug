@@ -14,7 +14,8 @@ enum StripeCheckoutError: LocalizedError {
     }
 }
 
-/// Calls the same Firebase Hosting rewrite as the website: `POST /api/stripeCheckout`.
+/// Hosted **Stripe Checkout** in Safari — used by the **website** (`POST /api/stripeCheckout`).
+/// The **iOS app** uses in-app **Payment Sheet** via `StripeNativePayment` instead (`POST /api/stripePaymentIntent`).
 final class StripeCheckoutService {
     /// - Parameters:
     ///   - bookingId: Firestore document ID of the booking.

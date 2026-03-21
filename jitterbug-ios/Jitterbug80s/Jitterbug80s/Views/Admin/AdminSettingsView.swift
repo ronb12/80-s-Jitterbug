@@ -67,7 +67,7 @@ struct AdminSettingsView: View {
                             Text("Stripe checkout")
                         } footer: {
                             Text(
-                                "Never put Stripe secret keys (sk_…) or webhook secrets (whsec_…) here — settings/site is publicly readable. Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET as Firebase Function secrets (see STRIPE-SETUP.md in jitterbug-site). Publishable keys (pk_…) are safe to store here."
+                                "Never put Stripe secret keys (sk_…) or webhook secrets (whsec_…) here — settings/site is publicly readable. Set STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET as Firebase Function secrets (see STRIPE-SETUP.md in jitterbug-site). Publishable keys (pk_…) are safe to store here. The iOS app needs the matching pk_… for in-app Payment Sheet; the website can keep using hosted Checkout."
                             )
                         }
 

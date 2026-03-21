@@ -315,6 +315,7 @@ struct AdminBookingDetailView: View {
     @State private var contactPhone = ""
     @State private var stripeCheckoutEnabled = false
     @State private var stripePublicSiteURL = SiteSettings.default.stripePublicBaseUrl
+    @State private var stripePublishableKey = ""
     @State private var stripePayLoading = false
     @State private var stripePayError: String?
 
@@ -417,8 +418,8 @@ struct AdminBookingDetailView: View {
                                 openStripeDepositCheckout()
                             } label: {
                                 Label(
-                                    stripePayLoading ? "Opening Stripe…" : "Customer: pay deposit (Stripe)",
-                                    systemImage: "safari"
+                                    stripePayLoading ? "Preparing payment…" : "Customer: pay deposit (Stripe)",
+                                    systemImage: "creditcard"
                                 )
                             }
                             .disabled(stripePayLoading)
@@ -427,7 +428,7 @@ struct AdminBookingDetailView: View {
                                     .font(.caption)
                                     .foregroundStyle(.red)
                             }
-                            Text("Opens Stripe Checkout in Safari for this booking. Requires Cloud Functions and secrets (see STRIPE-SETUP.md).")
+                            Text("Opens Stripe Payment Sheet in the app. Requires deploy of stripePaymentIntent function, webhook event payment_intent.succeeded, and publishable key in Admin → Settings.")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -499,6 +500,7 @@ struct AdminBookingDetailView: View {
                 contactPhone = s.contactPhone
                 stripeCheckoutEnabled = s.stripeCheckoutEnabled
                 stripePublicSiteURL = s.stripePublicBaseUrl
+                stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
             }
         }
     }
@@ -508,13 +510,13 @@ struct AdminBookingDetailView: View {
         stripePayLoading = true
         Task {
             do {
-                let url = try await StripeCheckoutService().createCheckoutURL(
+                _ = try await StripeNativePayment.presentDepositSheet(
                     bookingId: booking.id,
-                    publicSiteBaseURL: stripePublicSiteURL
+                    publicSiteBaseURL: stripePublicSiteURL,
+                    publishableKey: stripePublishableKey
                 )
                 await MainActor.run {
                     stripePayLoading = false
-                    UIApplication.shared.open(url)
                 }
             } catch {
                 await MainActor.run {

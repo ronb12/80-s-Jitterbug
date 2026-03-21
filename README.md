@@ -58,7 +58,7 @@ Firestore rules: `firebase deploy --only firestore:rules` when `firestore.rules`
 ## Stripe (optional)
 
 - **Setup:** [`jitterbug-site/STRIPE-SETUP.md`](jitterbug-site/STRIPE-SETUP.md)  
-- **API smoke test:** [`jitterbug-site/scripts/test-stripe-checkout.sh`](jitterbug-site/scripts/test-stripe-checkout.sh) (same `POST /api/stripeCheckout` as the web client)
+- **API smoke tests:** [`test-stripe-checkout.sh`](jitterbug-site/scripts/test-stripe-checkout.sh) (web Checkout), [`test-stripe-payment-intent.sh`](jitterbug-site/scripts/test-stripe-payment-intent.sh) (iOS Payment Sheet)
 
 Secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) are **Firebase Functions secrets**, not in Firestore.
 

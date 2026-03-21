@@ -1,60 +1,69 @@
-# Test Stripe checkout from the iOS app
+# Test Stripe deposit from the iOS app (Payment Sheet)
 
-The app starts checkout the same way as the website: **`POST https://<your-site>/api/stripeCheckout`** with JSON `{"bookingId":"<Firestore doc id>"}`, then opens the returned Stripe URL in Safari.
+The app uses **Stripe Payment Sheet** in-app: it calls **`POST https://<your-site>/api/stripePaymentIntent`** with JSON `{"bookingId":"<Firestore doc id>"}`, receives `clientSecret`, then Stripe’s SDK collects the card (or Apple Pay). **Stripe** charges the card; a **webhook** updates Firestore.
+
+The **website** still uses hosted Checkout via **`/api/stripeCheckout`** (Safari/browser).
 
 ## Before you test
 
-1. **Deploy** Firebase Hosting + Functions (`jitterbug-site/deploy.sh` or `firebase deploy --only hosting,functions`).
+1. **Deploy** Firebase Hosting + Functions (`jitterbug-site/deploy.sh` or `firebase deploy --only hosting,functions`) so **`stripePaymentIntent`** is live.
 2. **Secrets** (one-time):
    ```bash
    firebase functions:secrets:set STRIPE_SECRET_KEY    # sk_test_… while testing
    firebase functions:secrets:set STRIPE_WEBHOOK_SECRET
    ```
-3. **Stripe Dashboard → Webhooks**: endpoint `https://YOUR_SITE/api/stripeWebhook`, event `checkout.session.completed`.
-4. **Firestore → `settings/site`**: set **`stripeCheckoutEnabled`** = `true` and **`stripePublicBaseUrl`** = your live URL (e.g. `https://jitterbug80s.web.app`, no trailing slash).
+3. **Stripe Dashboard → Webhooks**: endpoint `https://YOUR_SITE/api/stripeWebhook` with events:
+   - `payment_intent.succeeded` **(required for iOS)**
+   - `checkout.session.completed` (for website Checkout)
+4. **Firestore → `settings/site`** (or **Admin → Settings** in the app):
+   - **`stripeCheckoutEnabled`** = `true`
+   - **`stripePublicBaseUrl`** = your site URL (e.g. `https://jitterbug80s.web.app`, no trailing slash)
+   - **`stripePublishableKeyTest`** or **`stripePublishableKeyLive`** + **`stripeMode`** matching your secret key (test vs live)
 
-See **`jitterbug-site/STRIPE-SETUP.md`** for full detail.
+See **`jitterbug-site/STRIPE-SETUP.md`** and **`IOS-STRIPE-NATIVE.md`**.
+
+## Swift Package Manager
+
+The app links **`Stripe`** and **`StripePaymentSheet`** from `https://github.com/stripe/stripe-ios`. Resolve packages in Xcode if needed (**File → Packages → Resolve Package Versions**).
 
 ## In the iOS app (Simulator or device)
 
 1. Build and run **Jitterbug80s** in Xcode.
-2. Go to **Book** tab → fill the form → **Submit request**.
-3. On the success screen, if checkout is enabled you should see **Pay deposit with card**.
-4. Tap it → **Safari** opens Stripe Checkout.
-5. Use Stripe test card: **`4242 4242 4242 4242`**, any future expiry, any CVC, any ZIP.
-6. After paying, you should land on **`/booking/success/`** on the site; Firestore booking should get **`depositPaid: true`** (via webhook).
+2. **Book** tab → fill the form → **Submit request**.
+3. On the success screen, tap **Pay deposit with card** (if enabled).
+4. Complete **Payment Sheet** in the app (test card **`4242 4242 4242 4242`**, future expiry, any CVC).
+5. After success, Stripe sends **`payment_intent.succeeded`** → webhook should set **`depositPaid: true`** on the booking (may take a few seconds).
 
-### Admin path (optional)
+### Admin path
 
-**Admin → Bookings →** open a booking → **Customer: pay deposit (Stripe)** (when deposit not paid and checkout enabled).
+**Admin → Bookings →** open a booking → **Customer: pay deposit (Stripe)** (same Payment Sheet).
 
 ## If the button doesn’t appear
 
-- `stripeCheckoutEnabled` is false in Firestore, or settings failed to load (offline / Firebase config).
-- App reads the same `settings/site` document as the website.
+- `stripeCheckoutEnabled` is false, or settings failed to load.
+- **Publishable key** empty for the current mode (`stripeMode` vs `pk_test_` / `pk_live_`).
 
-## If checkout fails with an error message
+## If payment fails
 
 | Message | What to check |
 |--------|----------------|
 | Stripe checkout is disabled | `stripeCheckoutEnabled` in `settings/site` |
-| Booking not found | Wrong `bookingId` or booking deleted |
-| Deposit already recorded | Already paid; webhook or admin set `depositPaid` |
-| Checkout failed (403/500) | Functions not deployed, missing `STRIPE_SECRET_KEY`, or Stripe API error |
+| Add your Stripe publishable key | Fill **pk_test_** / **pk_live_** in Admin → Settings |
+| Booking not found | Wrong `bookingId` |
+| Deposit already recorded | `depositPaid` already true |
+| HTTP 403/500 | Deploy `stripePaymentIntent`, secrets, Stripe API errors |
+| Paid but Firestore not updated | Webhook missing **`payment_intent.succeeded`** or wrong signing secret |
 
-## Test the API without Xcode (same as the app)
+## Test the PaymentIntent API (curl)
 
 From **`jitterbug-site`**:
 
 ```bash
-chmod +x scripts/test-stripe-checkout.sh
-# Create a booking from the site or app, then copy its Firestore document ID:
-export BOOKING_ID="paste_document_id_here"
-./scripts/test-stripe-checkout.sh
+chmod +x scripts/test-stripe-payment-intent.sh
+export BOOKING_ID="paste_firestore_booking_document_id_here"
+./scripts/test-stripe-payment-intent.sh
 ```
 
-If you get HTTP **200** and a JSON `url`, paste that URL into Safari to finish the payment.
+You should see HTTP **200** and a JSON **`clientSecret`** (starts with `pi_…_secret_…`).
 
-## Workspace note (Cursor / disk)
-
-If **`BookView.swift`** / **`BookingSuccessView.swift`** are missing from `jitterbug-ios`, the app won’t build—restore those files from Time Machine or another copy of the project, then wire success screen to pass **`bookingId`** into **`BookingSuccessView`** and call **`StripeCheckoutService`**. The service implementation lives in **`StripeCheckoutService.swift`**.
+Hosted Checkout for the web is still tested with **`scripts/test-stripe-checkout.sh`**.

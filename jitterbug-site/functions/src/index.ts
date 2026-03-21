@@ -150,6 +150,97 @@ export const stripeCheckout = onRequest(
   }
 );
 
+/**
+ * POST { bookingId: string } — returns { clientSecret } for Stripe iOS Payment Sheet.
+ * Money is captured by Stripe; this only creates a PaymentIntent (same rules as stripeCheckout).
+ * Web can keep using hosted Checkout via stripeCheckout.
+ */
+export const stripePaymentIntent = onRequest(
+  {
+    cors: true,
+    secrets: [stripeSecret],
+    region: "us-central1",
+    invoker: "public",
+  },
+  async (req, res) => {
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    try {
+      const site = await loadSiteStripeSettings();
+      if (!site.stripeCheckoutEnabled) {
+        res.status(403).json({ error: "Stripe checkout is disabled in site settings." });
+        return;
+      }
+
+      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
+      const bookingId = String(body?.bookingId ?? "").trim();
+      if (!bookingId) {
+        res.status(400).json({ error: "bookingId required" });
+        return;
+      }
+
+      const bookingRef = admin.firestore().collection(BOOKINGS).doc(bookingId);
+      const bookingSnap = await bookingRef.get();
+      if (!bookingSnap.exists) {
+        res.status(404).json({ error: "Booking not found" });
+        return;
+      }
+      const b = bookingSnap.data()!;
+      if (b.depositPaid === true) {
+        res.status(400).json({ error: "Deposit already recorded for this booking." });
+        return;
+      }
+
+      const bookingRefCode = String(b.bookingRef ?? "");
+      const pkgId = String(b.package ?? "");
+      const fullCents = pkgId ? await packagePriceCents(pkgId) : null;
+      let depositCents = site.stripeDepositCents;
+      if (fullCents != null && fullCents > 0) {
+        depositCents = Math.min(depositCents, fullCents);
+      }
+
+      const stripe = new Stripe(stripeSecret.value());
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: depositCents,
+        currency: "usd",
+        automatic_payment_methods: { enabled: true },
+        receipt_email: String(b.email ?? "").trim() || undefined,
+        description: `Photo booth deposit — ${bookingRefCode || bookingId}`,
+        metadata: {
+          bookingId,
+          bookingRef: bookingRefCode,
+        },
+      });
+
+      const clientSecret = paymentIntent.client_secret;
+      if (!clientSecret) {
+        res.status(500).json({ error: "Could not create payment client secret." });
+        return;
+      }
+
+      await bookingRef.update({
+        stripePaymentIntentId: paymentIntent.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      res.status(200).json({ clientSecret });
+    } catch (e) {
+      console.error("stripePaymentIntent", e);
+      res.status(500).json({
+        error: e instanceof Error ? e.message : "PaymentIntent failed",
+      });
+    }
+  }
+);
+
 export const stripeWebhook = onRequest(
   {
     secrets: [stripeSecret, webhookSecret],
@@ -194,6 +285,22 @@ export const stripeWebhook = onRequest(
           .update({
             depositPaid: true,
             stripeCheckoutSessionId: session.id,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+      }
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      const bookingId = pi.metadata?.bookingId;
+      if (bookingId && pi.status === "succeeded") {
+        await admin
+          .firestore()
+          .collection(BOOKINGS)
+          .doc(bookingId)
+          .update({
+            depositPaid: true,
+            stripePaymentIntentId: pi.id,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
       }

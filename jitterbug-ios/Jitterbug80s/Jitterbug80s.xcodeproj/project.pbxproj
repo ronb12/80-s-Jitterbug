@@ -10,6 +10,9 @@
 		47AA7F022F631A5D00DE63DF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E042F6315E200DE63DF /* FirebaseCore */; };
 		47AA7F032F631A5D00DE63DF /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E022F6315E200DE63DF /* FirebaseAuth */; };
 		47AA7F042F631A5D00DE63DF /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E032F6315E200DE63DF /* FirebaseFirestore */; };
+		47AA7F052F631A5D00DE63DF /* Stripe in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E062F6315E200DE63DF /* Stripe */; };
+		47AA7F072F631A5D00DE63DF /* StripePaymentSheet in Frameworks */ = {isa = PBXBuildFile; productRef = 47AA7E082F6315E200DE63DF /* StripePaymentSheet */; };
+		47AA807B2F631A5D00DE63DF /* StripeNativePayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA807A2F631A5D00DE63DF /* StripeNativePayment.swift */; };
 		47AA80102F631A5D00DE63DF /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80112F631A5D00DE63DF /* ContentView.swift */; };
 		47AA80122F631A5D00DE63DF /* Jitterbug80sApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80132F631A5D00DE63DF /* Jitterbug80sApp.swift */; };
 		47AA80142F631A5D00DE63DF /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80152F631A5D00DE63DF /* AuthService.swift */; };
@@ -102,6 +105,7 @@
 		47AA80712F631A5D00DE63DF /* PrintService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrintService.swift; sourceTree = "<group>"; };
 		47AA804B2F631A5D00DE63DF /* SettingsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsService.swift; sourceTree = "<group>"; };
 		47AA80792F631A5D00DE63DF /* StripeCheckoutService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripeCheckoutService.swift; sourceTree = "<group>"; };
+		47AA807A2F631A5D00DE63DF /* StripeNativePayment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StripeNativePayment.swift; sourceTree = "<group>"; };
 		47AA804D2F631A5D00DE63DF /* AdminSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminSettingsView.swift; sourceTree = "<group>"; };
 		47AA80452F631A5D00DE63DF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		47AA80472F631A5D00DE63DF /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -133,6 +137,8 @@
 				47AA7F042F631A5D00DE63DF /* FirebaseFirestore in Frameworks */,
 				47AA7F032F631A5D00DE63DF /* FirebaseAuth in Frameworks */,
 				47AA7F022F631A5D00DE63DF /* FirebaseCore in Frameworks */,
+				47AA7F052F631A5D00DE63DF /* Stripe in Frameworks */,
+				47AA7F072F631A5D00DE63DF /* StripePaymentSheet in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +217,7 @@
 				47AA80712F631A5D00DE63DF /* PrintService.swift */,
 				47AA804B2F631A5D00DE63DF /* SettingsService.swift */,
 				47AA80792F631A5D00DE63DF /* StripeCheckoutService.swift */,
+				47AA807A2F631A5D00DE63DF /* StripeNativePayment.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -268,6 +275,8 @@
 				47AA7E042F6315E200DE63DF /* FirebaseCore */,
 				47AA7E022F6315E200DE63DF /* FirebaseAuth */,
 				47AA7E032F6315E200DE63DF /* FirebaseFirestore */,
+				47AA7E062F6315E200DE63DF /* Stripe */,
+				47AA7E082F6315E200DE63DF /* StripePaymentSheet */,
 			);
 			productName = Jitterbug80s;
 			productReference = 47AA7D9B2F6315E200DE63DF /* Jitterbug80s.app */;
@@ -353,6 +362,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				47AA7E012F6315E200DE63DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				47AA7E052F6315E200DE63DF /* XCRemoteSwiftPackageReference "stripe-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 47AA7D9C2F6315E200DE63DF /* Products */;
@@ -430,6 +440,7 @@
 				47AA80702F631A5D00DE63DF /* PrintService.swift in Sources */,
 				47AA804A2F631A5D00DE63DF /* SettingsService.swift in Sources */,
 				47AA80782F631A5D00DE63DF /* StripeCheckoutService.swift in Sources */,
+				47AA807B2F631A5D00DE63DF /* StripeNativePayment.swift in Sources */,
 				47AA804C2F631A5D00DE63DF /* AdminSettingsView.swift in Sources */,
 				);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -842,6 +853,14 @@
 				minimumVersion = 11.0.0;
 			};
 		};
+		47AA7E052F6315E200DE63DF /* XCRemoteSwiftPackageReference "stripe-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stripe/stripe-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 25.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -859,6 +878,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 47AA7E012F6315E200DE63DF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
+		};
+		47AA7E062F6315E200DE63DF /* Stripe */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 47AA7E052F6315E200DE63DF /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = Stripe;
+		};
+		47AA7E082F6315E200DE63DF /* StripePaymentSheet */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 47AA7E052F6315E200DE63DF /* XCRemoteSwiftPackageReference "stripe-ios" */;
+			productName = StripePaymentSheet;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
