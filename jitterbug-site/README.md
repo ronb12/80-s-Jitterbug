@@ -49,6 +49,8 @@ Copy **`.env.local.example`** to `.env.local` and fill in:
 
 ## Deployment
 
+**GitHub + Vercel + Neon:** **[`INTEGRATIONS.md`](INTEGRATIONS.md)** — how the three connect and how to verify **`DATABASE_URL`** on Vercel.
+
 **Recommended:** **[`VERCEL.md`](VERCEL.md)** — connect the repo, set env vars, deploy. In **Admin → Settings** (Neon `site_settings`), set **`stripePublicBaseUrl`** to your Vercel production URL (no trailing slash).
 
 **Firebase (Firestore rules, optional legacy hosting):** Project ID **jitterbug80s**.

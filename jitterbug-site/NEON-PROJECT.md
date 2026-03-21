@@ -30,6 +30,10 @@ npm run db:push
 npm run db:verify
 ```
 
+## Vercel
+
+Production must have **`DATABASE_URL`** (pooled URL) in **Vercel → Settings → Environment Variables**, or use **`npm run vercel:push-env`** from this folder. See **`INTEGRATIONS.md`**.
+
 ## Security
 
 If database credentials were ever copied from logs or chat, **reset the role password** in the [Neon Console](https://console.neon.tech) → project → **Roles** → `neondb_owner` → reset password, then update **`DATABASE_URL`** everywhere.
