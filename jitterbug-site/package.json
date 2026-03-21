@@ -7,24 +7,37 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy:vercel": "npx vercel@latest --prod --yes"
+    "deploy:vercel": "npx vercel@latest --prod --yes",
+    "vercel:push-env": "node scripts/push-env-to-vercel.mjs",
+    "vercel:push-env:partial": "node scripts/push-env-to-vercel.mjs --allow-partial",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:verify": "node scripts/neon-app-readiness.mjs",
+    "site:url:neon": "node scripts/set-production-site-url.mjs",
+    "neon:auth": "neonctl auth",
+    "neon:cs": "neonctl connection-string --pooled --role-name neondb_owner",
+    "neon:psql-tables": "neonctl connection-string --pooled --role-name neondb_owner --psql -- -c \"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY 1;\""
   },
   "dependencies": {
-    "firebase": "^12.10.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "drizzle-orm": "^0.38.3",
     "firebase-admin": "^13.6.0",
-    "stripe": "^20.3.0",
     "framer-motion": "^12.35.2",
     "next": "16.2.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "stripe": "^20.3.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^16.6.1",
+    "drizzle-kit": "^0.30.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "neonctl": "^2.18.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

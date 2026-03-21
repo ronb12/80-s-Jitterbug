@@ -1,12 +1,8 @@
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { emptyCors204, jsonWithCors } from "@/lib/server/api-cors";
-import { getFirebaseAdmin } from "@/lib/server/firebase-admin";
-import {
-  BOOKINGS,
-  loadSiteStripeSettings,
-  packagePriceCents,
-} from "@/lib/server/site-stripe";
+import { getBookingByIdNeon, updateBookingNeon } from "@/lib/server/neon-queries";
+import { loadSiteStripeSettings, packagePriceCents } from "@/lib/server/site-stripe";
 
 export const runtime = "nodejs";
 
@@ -35,13 +31,10 @@ export async function POST(request: NextRequest) {
       return jsonWithCors({ error: "bookingId required" }, { status: 400 });
     }
 
-    const admin = getFirebaseAdmin();
-    const bookingRef = admin.firestore().collection(BOOKINGS).doc(bookingId);
-    const bookingSnap = await bookingRef.get();
-    if (!bookingSnap.exists) {
+    const b = await getBookingByIdNeon(bookingId);
+    if (!b) {
       return jsonWithCors({ error: "Booking not found" }, { status: 404 });
     }
-    const b = bookingSnap.data()!;
     if (b.depositPaid === true) {
       return jsonWithCors(
         { error: "Deposit already recorded for this booking." },
@@ -50,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const bookingRefCode = String(b.bookingRef ?? "");
-    const pkgId = String(b.package ?? "");
+    const pkgId = String(b.packageId ?? "");
     const fullCents = pkgId ? await packagePriceCents(pkgId) : null;
     let depositCents = site.stripeDepositCents;
     if (fullCents != null && fullCents > 0) {
@@ -83,10 +76,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    await bookingRef.update({
-      stripeCheckoutSessionId: session.id,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    await updateBookingNeon(bookingId, { stripeCheckoutSessionId: session.id });
 
     return jsonWithCors({ url: session.url });
   } catch (e) {

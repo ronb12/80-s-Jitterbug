@@ -1,21 +1,18 @@
 "use client";
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
-
-const SETTINGS_EVENT_TYPES_ID = "eventTypes";
-const SETTINGS_COLLECTION = "settings";
+import { publicApiOrigin } from "./api-public";
+import { getAdminApiHeaders } from "./admin-auth";
 
 const DEFAULT_EVENT_TYPES = ["Wedding", "Birthday", "Corporate Event", "Party", "Other"];
 
 export async function getEventTypes(): Promise<string[]> {
-  if (!db) return DEFAULT_EVENT_TYPES;
+  const origin = publicApiOrigin();
+  if (!origin) return DEFAULT_EVENT_TYPES;
   try {
-    const ref = doc(db, SETTINGS_COLLECTION, SETTINGS_EVENT_TYPES_ID);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return DEFAULT_EVENT_TYPES;
-    const data = snap.data();
-    const list = data?.eventTypes;
+    const r = await fetch(`${origin}/api/data/event-types`);
+    if (!r.ok) return DEFAULT_EVENT_TYPES;
+    const data = (await r.json()) as { eventTypes?: string[] };
+    const list = data.eventTypes;
     if (!Array.isArray(list) || list.length === 0) return DEFAULT_EVENT_TYPES;
     return list.filter((t): t is string => typeof t === "string" && t.trim() !== "").map((t) => t.trim());
   } catch {
@@ -24,9 +21,15 @@ export async function getEventTypes(): Promise<string[]> {
 }
 
 export async function setEventTypes(eventTypes: string[]): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
-  const ref = doc(db, SETTINGS_COLLECTION, SETTINGS_EVENT_TYPES_ID);
-  await setDoc(ref, { eventTypes: eventTypes.map((t) => t.trim()).filter(Boolean) });
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
+
+  const r = await fetch(`${origin}/api/data/event-types`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify({ eventTypes: eventTypes.map((t) => t.trim()).filter(Boolean) }),
+  });
+  if (!r.ok) throw new Error("Could not save event types");
 }
 
 export { DEFAULT_EVENT_TYPES };

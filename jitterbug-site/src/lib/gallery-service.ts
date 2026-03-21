@@ -1,19 +1,7 @@
 "use client";
 
-import {
-  collection,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  query,
-  orderBy,
-  serverTimestamp,
-} from "firebase/firestore";
-import { db } from "./firebase";
-
-const GALLERY_COLLECTION = "gallery";
+import { publicApiOrigin } from "./api-public";
+import { getAdminApiHeaders } from "./admin-auth";
 
 export interface GalleryPhoto {
   id: string;
@@ -24,68 +12,61 @@ export interface GalleryPhoto {
 }
 
 export async function listGalleryPhotos(): Promise<GalleryPhoto[]> {
-  if (!db) return [];
+  const origin = publicApiOrigin();
+  if (!origin) return [];
   try {
-    const q = query(
-      collection(db, GALLERY_COLLECTION),
-      orderBy("order", "asc")
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-      const data = d.data();
-      return {
-        id: d.id,
-        url: data.url ?? "",
-        caption: data.caption ?? "",
-        order: typeof data.order === "number" ? data.order : 0,
-        createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? data.createdAt ?? "",
-      };
-    });
+    const r = await fetch(`${origin}/api/data/gallery`);
+    if (!r.ok) return [];
+    const data = (await r.json()) as { photos?: GalleryPhoto[] };
+    return data.photos ?? [];
   } catch {
     return [];
   }
 }
 
-/** Add a photo by URL (no Storage—works on free Spark plan). */
 export async function addGalleryPhotoByUrl(
   imageUrl: string,
   caption: string,
   order: number
 ): Promise<GalleryPhoto> {
-  if (!db) throw new Error("Firebase not configured");
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
   const url = imageUrl.trim();
   if (!url) throw new Error("Image URL is required");
 
-  const docRef = await addDoc(collection(db, GALLERY_COLLECTION), {
-    url,
-    caption: caption.trim(),
-    order,
-    createdAt: serverTimestamp(),
+  const r = await fetch(`${origin}/api/data/gallery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify({ url, caption: caption.trim(), order }),
   });
-
-  return {
-    id: docRef.id,
-    url,
-    caption: caption.trim(),
-    order,
-    createdAt: new Date().toISOString(),
-  };
+  if (!r.ok) throw new Error("Could not add photo");
+  const data = (await r.json()) as { photo?: GalleryPhoto };
+  if (!data.photo) throw new Error("Invalid response");
+  return data.photo;
 }
 
 export async function updateGalleryPhoto(
   id: string,
   data: { caption?: string; order?: number; url?: string }
 ): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
-  const update: Record<string, unknown> = {};
-  if (data.caption !== undefined) update.caption = data.caption.trim();
-  if (data.order !== undefined) update.order = data.order;
-  if (data.url !== undefined) update.url = data.url.trim();
-  if (Object.keys(update).length === 0) return;
-  await updateDoc(doc(db, GALLERY_COLLECTION, id), update);
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
+
+  const r = await fetch(`${origin}/api/data/gallery/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error("Could not update photo");
 }
 
 export async function deleteGalleryPhoto(id: string): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
-  await deleteDoc(doc(db, GALLERY_COLLECTION, id));
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
+
+  const r = await fetch(`${origin}/api/data/gallery/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: getAdminApiHeaders(),
+  });
+  if (!r.ok) throw new Error("Could not delete photo");
 }

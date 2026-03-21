@@ -1,14 +1,14 @@
 # 80's Jitterbug Photo Booth
 
-A modern marketing and booking website for **80's Jitterbug** retro photo booth rentals. Built with Next.js, React, Tailwind CSS, and Firebase.
+A modern marketing and booking website for **80's Jitterbug** retro photo booth rentals. Built with Next.js, React, Tailwind CSS, **Vercel** + **Neon**.
 
 ---
 
 ## Overview
 
 - **Live site:** [https://jitterbug80s.web.app](https://jitterbug80s.web.app)
-- **Stack:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion, Firebase (Firestore, Analytics). **Production APIs (Stripe, webhooks, booking submit):** deploy on **[Vercel](https://vercel.com)** — see **`VERCEL.md`**.
-- **Features:** Public pages (Home, About, Packages, Gallery, Booking, Contact), booking form with Firestore, owner admin (bookings, packages, event types, gallery), session-persistent admin login
+- **Stack:** Next.js 16 (App Router), React 19, Tailwind CSS 4, Framer Motion. **Hosting:** **[Vercel](https://vercel.com)**. **Database:** **[Neon](https://neon.tech)** (Postgres). **No Firebase client** (no Firestore / Analytics in the browser). Optional server-only **FCM** for push — **`STACK.md`**, **`NEON.md`**, **`VERCEL.md`**.
+- **Features:** Public pages (Home, About, Packages, Gallery, Booking, Contact), booking form (API → Neon), owner admin (bookings, packages, event types, gallery), session-persistent admin login
 
 ---
 
@@ -37,20 +37,19 @@ Open [http://localhost:3000](http://localhost:3000).
 
 Copy **`.env.local.example`** to `.env.local` and fill in:
 
-- **Firebase:** `NEXT_PUBLIC_FIREBASE_*` (from [Firebase Console](https://console.firebase.google.com/project/jitterbug80s/settings/general) → Your apps)
-- **Server (local Stripe / webhooks):** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `FIREBASE_SERVICE_ACCOUNT_JSON` — see **`VERCEL.md`**
+- **Server / Vercel:** `DATABASE_URL` (Neon), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`; optional `FCM_SERVICE_ACCOUNT_JSON` (Google push only) — **`NEON.md`**, **`VERCEL.md`**
 - **Admin:** `NEXT_PUBLIC_ADMIN_EMAIL`, `NEXT_PUBLIC_ADMIN_PASSWORD` (required for `/admin/*`)
 - **Optional second admin:** `NEXT_PUBLIC_ADMIN_EMAIL_2`, `NEXT_PUBLIC_ADMIN_PASSWORD_2`
 - **Site URL:** `NEXT_PUBLIC_SITE_URL` (e.g. `https://80sjitterbug.com` for canonical and Open Graph)
 - **Contact (shown on Contact, Privacy, Terms):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE` (e.g. `you@example.com`, `(555) 123-4567`)
 
-**Google Cloud “API key accessible” / referrer restrictions:** see **[`GOOGLE-CLOUD-API-KEY-SETUP.md`](GOOGLE-CLOUD-API-KEY-SETUP.md)** (browser + iOS key allowlists for this project).
+**Google Cloud API keys:** the **website** does not use a browser Firebase config. See **[`GOOGLE-CLOUD-API-KEY-SETUP.md`](GOOGLE-CLOUD-API-KEY-SETUP.md)** mainly for **iOS** / legacy allowlists if needed.
 
 ---
 
 ## Deployment
 
-**Recommended:** **[`VERCEL.md`](VERCEL.md)** — connect the repo, set env vars, deploy. Update Firestore `settings/site` → `stripePublicBaseUrl` to your Vercel URL.
+**Recommended:** **[`VERCEL.md`](VERCEL.md)** — connect the repo, set env vars, deploy. In **Admin → Settings** (Neon `site_settings`), set **`stripePublicBaseUrl`** to your Vercel production URL (no trailing slash).
 
 **Firebase (Firestore rules, optional legacy hosting):** Project ID **jitterbug80s**.
 
@@ -80,7 +79,7 @@ src/
 ## Features
 
 - **Public site:** Home, About, Packages, Gallery, Booking, Contact; Privacy and Terms.
-- **Booking:** Form prefers **`POST /api/bookings/submit`** (Vercel) so admin push can fire without Cloud Functions; falls back to client Firestore if the API is unavailable. Customer sees a booking reference (e.g. JB-1234).
+- **Booking:** **`POST /api/bookings/submit`** creates a row in **Neon** and can trigger admin FCM when configured. Customer sees a booking reference (e.g. JB-1234).
 - **Admin (session-persistent):**
   - **Bookings** — List, filter, search, update status, add/edit/delete, export CSV, copy ref, email link.
   - **Packages** — Edit package names and prices (stored in Firestore; used on Packages page and booking form).
@@ -90,11 +89,11 @@ src/
 
 ---
 
-## Firestore
+## Database (Neon)
 
-- **Collections:** `bookings`, `settings` (e.g. `settings/packages`, `settings/eventTypes`, `settings/gallery`).
-- **Rules:** See `firestore.rules`. Deploy with `firebase deploy --only firestore`.
-- **Indexes:** Create any composite indexes suggested in the browser console when loading admin lists.
+- **Tables:** See `src/lib/db/schema.ts` (`bookings`, `site_settings`, `packages_config`, `event_types_config`, `gallery_photos`, push token tables).
+- **Migrations:** `npm run db:push` with `DATABASE_URL` set — **`NEON.md`**.
+- **Firestore:** Still used by the **iOS** app in this repo (`firestore.rules`); not used by the website data layer.
 
 ---
 

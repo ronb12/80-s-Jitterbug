@@ -3,8 +3,6 @@ import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import FirebaseInit from "@/components/FirebaseInit";
-
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
   subsets: ["latin"],
@@ -43,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={dmSans.variable}>
       <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased">
-        <FirebaseInit />
         <Navigation />
         <main>{children}</main>
         <Footer />

@@ -1,5 +1,7 @@
 # iOS push notifications (FCM)
 
+> **Website:** The Next.js site stores data in **Neon (Postgres)** and uses FCM only for sending pushes. Admin/customer tokens for the **web** stack live in Neon unless you still use legacy Firestore flows. The **iOS** app in this repo still reads/writes **Firestore** until you migrate it to HTTPS APIs.
+
 The app uses **Firebase Cloud Messaging** for:
 
 | Audience | When |

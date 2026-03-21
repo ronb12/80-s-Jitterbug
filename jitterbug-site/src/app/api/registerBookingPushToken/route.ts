@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { emptyCors204, jsonWithCors } from "@/lib/server/api-cors";
-import { registerCustomerPushToken } from "@/lib/server/fcm-notify";
+import { registerCustomerPushTokenNeon } from "@/lib/server/neon-queries";
 
 export const runtime = "nodejs";
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    await registerCustomerPushToken(bookingId, bookingRef, fcmToken);
+    await registerCustomerPushTokenNeon(bookingId, bookingRef, fcmToken);
     return jsonWithCors({ ok: true });
   } catch (e) {
     const status =

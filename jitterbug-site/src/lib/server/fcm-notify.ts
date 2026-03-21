@@ -1,29 +1,8 @@
-import { createHash } from "crypto";
-import { getFirebaseAdmin } from "./firebase-admin";
-import { BOOKINGS } from "./site-stripe";
-
-async function getAdminFcmTokens(): Promise<string[]> {
-  const db = getFirebaseAdmin().firestore();
-  const snap = await db.collection("adminFCM").get();
-  const tokens = new Set<string>();
-  for (const doc of snap.docs) {
-    const t = doc.data()?.fcmToken;
-    if (typeof t === "string" && t.length > 20) tokens.add(t);
-  }
-  return [...tokens];
-}
-
-async function getCustomerTokensForBooking(bookingId: string): Promise<string[]> {
-  const db = getFirebaseAdmin().firestore();
-  const col = db.collection(BOOKINGS).doc(bookingId).collection("notifyTokens");
-  const snap = await col.get();
-  const tokens = new Set<string>();
-  for (const doc of snap.docs) {
-    const t = doc.data()?.token;
-    if (typeof t === "string" && t.length > 20) tokens.add(t);
-  }
-  return [...tokens];
-}
+import { getFcmAdmin } from "./fcm-admin";
+import {
+  getAdminFcmTokensNeon,
+  getCustomerTokensForBookingNeon,
+} from "./neon-queries";
 
 async function sendMulticast(
   tokens: string[],
@@ -31,7 +10,17 @@ async function sendMulticast(
   data: Record<string, string>
 ): Promise<void> {
   if (tokens.length === 0) return;
-  const messaging = getFirebaseAdmin().messaging();
+  let adminSdk: ReturnType<typeof getFcmAdmin>;
+  try {
+    adminSdk = getFcmAdmin();
+  } catch (e) {
+    console.warn(
+      "FCM skipped (set FCM_SERVICE_ACCOUNT_JSON or FIREBASE_SERVICE_ACCOUNT_JSON for push):",
+      e
+    );
+    return;
+  }
+  const messaging = adminSdk.messaging();
   const chunkSize = 500;
   for (let i = 0; i < tokens.length; i += chunkSize) {
     const chunk = tokens.slice(i, i + chunkSize);
@@ -61,8 +50,12 @@ async function sendMulticast(
   }
 }
 
-export async function notifyAdminNewBooking(bookingId: string, bookingRef: string, name: string): Promise<void> {
-  const adminTokens = await getAdminFcmTokens();
+export async function notifyAdminNewBooking(
+  bookingId: string,
+  bookingRef: string,
+  name: string
+): Promise<void> {
+  const adminTokens = await getAdminFcmTokensNeon();
   await sendMulticast(
     adminTokens,
     { title: "New booking request", body: `${name} — ${bookingRef}` },
@@ -70,15 +63,18 @@ export async function notifyAdminNewBooking(bookingId: string, bookingRef: strin
   );
 }
 
-export async function notifyDepositPaid(bookingId: string, bookingRef: string): Promise<void> {
-  const adminTokens = await getAdminFcmTokens();
+export async function notifyDepositPaid(
+  bookingId: string,
+  bookingRef: string
+): Promise<void> {
+  const adminTokens = await getAdminFcmTokensNeon();
   await sendMulticast(
     adminTokens,
     { title: "Deposit paid", body: `${bookingRef} — deposit received` },
     { bookingId, type: "deposit_paid_admin", bookingRef }
   );
 
-  const customerTokens = await getCustomerTokensForBooking(bookingId);
+  const customerTokens = await getCustomerTokensForBookingNeon(bookingId);
   await sendMulticast(
     customerTokens,
     {
@@ -87,31 +83,4 @@ export async function notifyDepositPaid(bookingId: string, bookingRef: string): 
     },
     { bookingId, type: "deposit_paid_customer", bookingRef }
   );
-}
-
-/** Verify bookingRef then store FCM token (same rules as former Cloud Function). */
-export async function registerCustomerPushToken(
-  bookingId: string,
-  bookingRef: string,
-  fcmToken: string
-): Promise<void> {
-  const adminSdk = getFirebaseAdmin();
-  const docRef = adminSdk.firestore().collection(BOOKINGS).doc(bookingId);
-  const bookingSnap = await docRef.get();
-  if (!bookingSnap.exists) {
-    const err = new Error("Booking not found");
-    (err as Error & { statusCode?: number }).statusCode = 404;
-    throw err;
-  }
-  const br = String(bookingSnap.data()?.bookingRef ?? "").trim();
-  if (br !== bookingRef.trim()) {
-    const err = new Error("Invalid booking reference");
-    (err as Error & { statusCode?: number }).statusCode = 403;
-    throw err;
-  }
-  const docId = createHash("sha256").update(fcmToken).digest("hex").slice(0, 28);
-  await docRef.collection("notifyTokens").doc(docId).set({
-    token: fcmToken,
-    createdAt: adminSdk.firestore.FieldValue.serverTimestamp(),
-  });
 }

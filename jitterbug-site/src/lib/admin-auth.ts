@@ -1,4 +1,6 @@
 const ADMIN_SESSION_KEY = "adminAuthenticated";
+const ADMIN_EMAIL_KEY = "adminSessionEmail";
+const ADMIN_PASSWORD_KEY = "adminSessionPassword";
 
 const ADMIN_1_EMAIL = (process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "").trim().toLowerCase();
 const ADMIN_1_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
@@ -28,12 +30,25 @@ export function isAdminAuthenticated(): boolean {
   return sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
 }
 
-export function setAdminAuthenticated(): void {
+/** Store credentials for `/api/data/*` admin requests (same exposure model as NEXT_PUBLIC_* env). */
+export function setAdminAuthenticated(email: string, password: string): void {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+  sessionStorage.setItem(ADMIN_EMAIL_KEY, email.trim());
+  sessionStorage.setItem(ADMIN_PASSWORD_KEY, password);
 }
 
 export function clearAdminSession(): void {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  sessionStorage.removeItem(ADMIN_EMAIL_KEY);
+  sessionStorage.removeItem(ADMIN_PASSWORD_KEY);
+}
+
+export function getAdminApiHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  return {
+    "x-admin-email": sessionStorage.getItem(ADMIN_EMAIL_KEY) ?? "",
+    "x-admin-password": sessionStorage.getItem(ADMIN_PASSWORD_KEY) ?? "",
+  };
 }

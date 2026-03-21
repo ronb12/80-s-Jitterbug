@@ -1,141 +1,72 @@
 "use client";
 
-import {
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  orderBy,
-  doc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  type DocumentData,
-  type QuerySnapshot,
-} from "firebase/firestore";
-import { db } from "./firebase";
+import { publicApiOrigin } from "./api-public";
+import { getAdminApiHeaders } from "./admin-auth";
 import type { Booking, BookingFormData, BookingStatus } from "./booking-types";
 
-const BOOKINGS_COLLECTION = "bookings";
-
-function generateBookingRef(): string {
-  const prefix = "JB";
-  const num = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${num}`;
-}
-
-function snapshotToBookings(snap: QuerySnapshot<DocumentData>): Booking[] {
-  return snap.docs.map((d) => {
-    const data = d.data();
-    return {
-      id: d.id,
-      name: data.name ?? "",
-      email: data.email ?? "",
-      phone: data.phone ?? "",
-      eventType: data.eventType ?? "",
-      eventDate: data.eventDate ?? "",
-      eventLocation: data.eventLocation ?? "",
-      eventAddress: data.eventAddress ?? "",
-      package: data.package ?? "",
-      message: data.message ?? "",
-      status: (data.status as BookingStatus) ?? "pending",
-      bookingRef: data.bookingRef ?? "",
-      createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? data.createdAt ?? "",
-      updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? data.updatedAt ?? "",
-    };
-  });
-}
-
 export async function submitBooking(form: BookingFormData): Promise<{ bookingRef: string; id: string }> {
-  // Vercel / Node: server creates the doc + admin FCM (replaces Firestore `onBookingCreatedPush`).
-  if (typeof window !== "undefined") {
-    try {
-      const r = await fetch(`${window.location.origin}/api/bookings/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (r.ok) {
-        const data = (await r.json()) as { bookingRef?: string; id?: string; error?: string };
-        if (data.bookingRef && data.id) {
-          return { bookingRef: data.bookingRef, id: data.id };
-        }
-      }
-    } catch {
-      /* fall through to client Firestore (static hosting / offline) */
-    }
-  }
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("Open the site in a browser to submit a booking.");
 
-  if (!db) throw new Error("Firebase not configured");
-
-  const bookingRef = generateBookingRef();
-
-  const docRef = await addDoc(collection(db, BOOKINGS_COLLECTION), {
-    name: form.name.trim(),
-    email: form.email.trim(),
-    phone: form.phone.trim(),
-    eventType: form.eventType,
-    eventDate: form.eventDate,
-    eventLocation: form.eventLocation.trim(),
-    eventAddress: (form.eventAddress ?? "").trim(),
-    package: form.package,
-    message: (form.message ?? "").trim(),
-    status: "pending",
-    bookingRef,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
+  const r = await fetch(`${origin}/api/bookings/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(form),
   });
-
-  return { bookingRef, id: docRef.id };
+  const data = (await r.json()) as { bookingRef?: string; id?: string; error?: string };
+  if (!r.ok) {
+    throw new Error(data.error ?? `Booking failed (${r.status})`);
+  }
+  if (!data.bookingRef || !data.id) {
+    throw new Error(data.error ?? "Invalid response from server");
+  }
+  return { bookingRef: data.bookingRef, id: data.id };
 }
 
 export async function listBookings(): Promise<Booking[]> {
-  if (!db) throw new Error("Firebase not configured");
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
 
-  const q = query(
-    collection(db, BOOKINGS_COLLECTION),
-    orderBy("createdAt", "desc")
-  );
-  const snap = await getDocs(q);
-  return snapshotToBookings(snap);
+  const r = await fetch(`${origin}/api/data/bookings`, { headers: getAdminApiHeaders() });
+  if (r.status === 401) throw new Error("Admin session expired or unauthorized.");
+  if (!r.ok) throw new Error("Could not load bookings");
+  const data = (await r.json()) as { bookings?: Booking[] };
+  return data.bookings ?? [];
 }
 
-export async function updateBookingStatus(
-  bookingId: string,
-  status: BookingStatus
-): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
+export async function updateBookingStatus(bookingId: string, status: BookingStatus): Promise<void> {
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
 
-  await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), {
-    status,
-    updatedAt: serverTimestamp(),
+  const r = await fetch(`${origin}/api/data/bookings/${encodeURIComponent(bookingId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify({ status }),
   });
+  if (!r.ok) throw new Error("Could not update status");
 }
 
 export type BookingUpdateData = Partial<BookingFormData> & { status?: BookingStatus };
 
-export async function updateBooking(
-  bookingId: string,
-  data: BookingUpdateData
-): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
+export async function updateBooking(bookingId: string, data: BookingUpdateData): Promise<void> {
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
 
-  const update: Record<string, unknown> = { updatedAt: serverTimestamp() };
-  if (data.name !== undefined) update.name = data.name.trim();
-  if (data.email !== undefined) update.email = data.email.trim();
-  if (data.phone !== undefined) update.phone = data.phone.trim();
-  if (data.eventType !== undefined) update.eventType = data.eventType;
-  if (data.eventDate !== undefined) update.eventDate = data.eventDate;
-  if (data.eventLocation !== undefined) update.eventLocation = data.eventLocation.trim();
-  if (data.eventAddress !== undefined) update.eventAddress = data.eventAddress.trim();
-  if (data.package !== undefined) update.package = data.package;
-  if (data.message !== undefined) update.message = data.message.trim();
-  if (data.status !== undefined) update.status = data.status;
-
-  await updateDoc(doc(db, BOOKINGS_COLLECTION, bookingId), update);
+  const r = await fetch(`${origin}/api/data/bookings/${encodeURIComponent(bookingId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!r.ok) throw new Error("Could not update booking");
 }
 
 export async function deleteBooking(bookingId: string): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
-  await deleteDoc(doc(db, BOOKINGS_COLLECTION, bookingId));
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
+
+  const r = await fetch(`${origin}/api/data/bookings/${encodeURIComponent(bookingId)}`, {
+    method: "DELETE",
+    headers: getAdminApiHeaders(),
+  });
+  if (!r.ok) throw new Error("Could not delete booking");
 }

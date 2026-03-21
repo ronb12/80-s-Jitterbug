@@ -1,31 +1,24 @@
 "use client";
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "./firebase";
-
-const SITE_SETTINGS_PATH = "settings/site";
+import { publicApiOrigin } from "./api-public";
+import { getAdminApiHeaders } from "./admin-auth";
 
 export interface SiteSettings {
+  /** Optional display name (also used by mobile clients when synced). */
+  ownerName?: string;
   contactEmail: string;
   contactPhone: string;
   serviceArea: string;
-  /** Base URL for Stripe redirects (no trailing slash), e.g. https://jitterbug80s.web.app */
   stripePublicBaseUrl: string;
-  /** Offer “Pay deposit” after booking when true and Cloud Functions + Stripe secret are configured. */
   stripeCheckoutEnabled: boolean;
-  /** Deposit charged at checkout (USD cents), e.g. 5000 = $50. Capped by package price when parsable. */
   stripeDepositCents: number;
-  /**
-   * Publishable keys only (pk_test_… / pk_live_…). Safe to store in Firestore.
-   * Never put secret keys (sk_…) here — they are public-readable; use Firebase secrets instead.
-   */
   stripePublishableKeyTest: string;
   stripePublishableKeyLive: string;
-  /** Which mode to use for display / future client-side Stripe features. */
   stripeMode: "test" | "live";
 }
 
 const defaults: SiteSettings = {
+  ownerName: "",
   contactEmail: "sbowie207@gmail.com",
   contactPhone: "646-673-1956",
   serviceArea: "Serving the greater area and surrounding communities.",
@@ -38,17 +31,22 @@ const defaults: SiteSettings = {
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
-  if (!db) return defaults;
+  const origin = publicApiOrigin();
+  if (!origin) return defaults;
   try {
-    const snap = await getDoc(doc(db, SITE_SETTINGS_PATH));
-    if (!snap.exists()) return defaults;
-    const d = snap.data();
+    const r = await fetch(`${origin}/api/data/site-settings`);
+    if (!r.ok) return defaults;
+    const d = (await r.json()) as Record<string, unknown>;
     const mode = d.stripeMode === "live" ? "live" : "test";
     return {
+      ownerName: String(d.ownerName ?? "").trim(),
       contactEmail: (d.contactEmail as string) ?? defaults.contactEmail,
       contactPhone: (d.contactPhone as string) ?? defaults.contactPhone,
       serviceArea: (d.serviceArea as string) ?? defaults.serviceArea,
-      stripePublicBaseUrl: String(d.stripePublicBaseUrl ?? defaults.stripePublicBaseUrl).replace(/\/$/, "") || defaults.stripePublicBaseUrl,
+      stripePublicBaseUrl: String(d.stripePublicBaseUrl ?? defaults.stripePublicBaseUrl).replace(
+        /\/$/,
+        ""
+      ),
       stripeCheckoutEnabled: Boolean(d.stripeCheckoutEnabled),
       stripeDepositCents: Math.max(50, Number(d.stripeDepositCents) || defaults.stripeDepositCents),
       stripePublishableKeyTest: String(d.stripePublishableKeyTest ?? "").trim(),
@@ -61,9 +59,12 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 }
 
 export async function updateSiteSettings(settings: Partial<SiteSettings>): Promise<void> {
-  if (!db) throw new Error("Firebase not configured");
+  const origin = publicApiOrigin();
+  if (!origin) throw new Error("No origin");
+
   const merged = await getSiteSettings();
   const next: SiteSettings = {
+    ownerName: settings.ownerName ?? merged.ownerName ?? "",
     contactEmail: settings.contactEmail ?? merged.contactEmail,
     contactPhone: settings.contactPhone ?? merged.contactPhone,
     serviceArea: settings.serviceArea ?? merged.serviceArea,
@@ -74,5 +75,11 @@ export async function updateSiteSettings(settings: Partial<SiteSettings>): Promi
     stripePublishableKeyLive: settings.stripePublishableKeyLive ?? merged.stripePublishableKeyLive,
     stripeMode: settings.stripeMode ?? merged.stripeMode,
   };
-  await setDoc(doc(db, SITE_SETTINGS_PATH), { ...next }, { merge: true });
+
+  const r = await fetch(`${origin}/api/data/site-settings`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAdminApiHeaders() },
+    body: JSON.stringify(next),
+  });
+  if (!r.ok) throw new Error("Could not save settings");
 }

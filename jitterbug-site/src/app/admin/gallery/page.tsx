@@ -36,7 +36,7 @@ export default function AdminGalleryPage() {
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateAdminCredentials(email, password)) {
-      setAdminAuthenticated();
+      setAdminAuthenticated(email, password);
       setAuthenticated(true);
       setPasswordError(false);
     } else {

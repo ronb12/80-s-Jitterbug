@@ -4,7 +4,7 @@
 
 The app uses **Next.js Route Handlers** for Stripe, webhooks, and booking submit. Deploy from **`jitterbug-site`** on **Vercel** and set environment variables — see **`VERCEL.md`**.
 
-Point **`settings/site` → `stripePublicBaseUrl`** at your Vercel production URL (no trailing slash).
+In **Admin → Settings** (stored in **Neon** `site_settings`), set **`stripePublicBaseUrl`** to your Vercel production URL (no trailing slash).
 
 ---
 
