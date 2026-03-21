@@ -1,5 +1,7 @@
 # Dependencies & build
 node_modules
+# Root stub `package.json` (Vercel detection); real lockfile is jitterbug-site/package-lock.json
+/package-lock.json
 .next
 out
 build

@@ -1,5 +1,14 @@
 # Deploy on Vercel (Stripe + booking API + FCM)
 
+## “No Next.js version detected”
+
+The app’s `package.json` is inside **`jitterbug-site/`**. If you connected the **whole GitHub repo** to Vercel, either:
+
+1. Set **Root Directory** to **`jitterbug-site`** (Project → Settings → General), **or**
+2. Use the **repo root** `vercel.json` + `package.json` (see **`../VERCEL-ROOT.md`** in the monorepo).
+
+---
+
 The Next.js app includes **Route Handlers** that replace Firebase Cloud Functions for:
 
 - `POST /api/stripeCheckout` — hosted Checkout session

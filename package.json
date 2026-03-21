@@ -1,0 +1,15 @@
+{
+  "name": "80s-jitterbug-repo",
+  "private": true,
+  "description": "Monorepo root. The Next.js site is in jitterbug-site/. Root vercel.json runs install/build there when Vercel uses the repo root.",
+  "scripts": {
+    "build": "cd jitterbug-site && npm run build",
+    "dev": "cd jitterbug-site && npm run dev",
+    "install-site": "cd jitterbug-site && npm install"
+  },
+  "dependencies": {
+    "next": "16.2.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}
