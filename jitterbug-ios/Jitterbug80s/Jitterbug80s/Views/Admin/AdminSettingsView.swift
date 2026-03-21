@@ -72,6 +72,37 @@ struct AdminSettingsView: View {
                         }
 
                         Section {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("How to find test and live publishable keys")
+                                    .font(.subheadline.weight(.semibold))
+                                Group {
+                                    Text("1. Sign in at stripe.com and open the Stripe Dashboard.")
+                                    Text("2. Open Developers (top right) → API keys.")
+                                    Text("3. Use the Test mode switch (top of the dashboard): when Test mode is ON you see Publishable key pk_test_…; turn Test mode OFF for live to see pk_live_…. Copy each into the matching field above.")
+                                    Text("4. Under Standard keys, copy only the Publishable key—not the Secret key (sk_…).")
+                                    Text("5. Secret keys (sk_test_ / sk_live_) and webhook secrets (whsec_…) never belong here. Set them with Firebase: firebase functions:secrets:set (see STRIPE-SETUP.md in jitterbug-site).")
+                                }
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Link(destination: URL(string: "https://dashboard.stripe.com/test/apikeys")!) {
+                                        Label("Open API keys (test mode)", systemImage: "arrow.up.right.square")
+                                    }
+                                    Link(destination: URL(string: "https://dashboard.stripe.com/apikeys")!) {
+                                        Label("Open API keys (live mode)", systemImage: "arrow.up.right.square")
+                                    }
+                                }
+                                .font(.subheadline)
+                            }
+                            .padding(.vertical, 4)
+                        } header: {
+                            Text("Stripe key help")
+                        } footer: {
+                            Text("Links open in Safari. If a key doesn’t match (test vs live), toggle Test mode in Stripe and copy again.")
+                        }
+
+                        Section {
                             Button("Export settings") {
                                 exportSettings()
                             }

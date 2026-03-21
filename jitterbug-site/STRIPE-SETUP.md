@@ -7,7 +7,20 @@ Checkout and webhooks run in **Firebase Cloud Functions** (this project uses sta
 ## 1. Stripe Dashboard
 
 1. Create a [Stripe](https://stripe.com) account.
-2. **Developers → API keys**: copy **Publishable** test/live keys (`pk_test_…`, `pk_live_…`) into **Admin → Settings** (optional reference; Checkout uses the secret key on the server).
+
+### Finding publishable keys (`pk_test_…` and `pk_live_…`) for Admin → Settings
+
+These are the keys you paste into **Admin → Settings** in the iOS app (or into Firestore `settings/site` if you edit there). They are safe to store in Firestore; they are **not** your secret keys.
+
+| What you need | Where in Stripe |
+|----------------|-----------------|
+| **Test publishable key** (`pk_test_…`) | [Dashboard → Developers → API keys (test)](https://dashboard.stripe.com/test/apikeys) — ensure **Test mode** is **ON** (toggle at top of the dashboard). Under **Standard keys**, copy **Publishable key**. |
+| **Live publishable key** (`pk_live_…`) | Turn **Test mode** **OFF**, then open [Developers → API keys](https://dashboard.stripe.com/apikeys). Copy the **Publishable key** (starts with `pk_live_`). |
+
+**Do not** paste **Secret key** (`sk_test_…` / `sk_live_…`) or **webhook signing secret** (`whsec_…`) into Admin Settings or Firestore—those go only into Firebase Functions secrets (section 2 below).
+
+**Quick check:** Test keys always start with `pk_test_`; live publishable keys start with `pk_live_`. If the wrong one appears, toggle **Test mode** in Stripe and open **API keys** again.
+
 3. **Developers → Webhooks → Add endpoint**  
    - URL: `https://YOUR_PROJECT.web.app/api/stripeWebhook`  
      (or your custom domain + `/api/stripeWebhook`)  
