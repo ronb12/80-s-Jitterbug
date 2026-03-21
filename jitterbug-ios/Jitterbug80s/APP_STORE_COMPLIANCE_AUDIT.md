@@ -29,15 +29,15 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
 
 | Capability | Status | Notes |
 |------------|--------|--------|
-| **Photo Library** | ❌ **Missing** | Admin uses `PhotosPicker` (photo library). You **must** add `NSPhotoLibraryUsageDescription` (e.g. “80's Jitterbug uses your photo library so admins can add photos to the event gallery.”). |
+| **Photo Library** | ✅ **Set** | `NSPhotoLibraryUsageDescription` is configured on the target (admin gallery uploads). |
 | Camera | ✅ N/A | Not used. |
 | Location | ✅ N/A | Not used. |
 | Microphone | ✅ N/A | Not used. |
-| Push Notifications | ⚠️ Declared | `UIBackgroundModes = remote-notification` and `aps-environment` in entitlements are set, but the app does not register for push. Either implement push or remove these to avoid “declared but not used.” |
+| Push Notifications | ✅ **Removed** | `aps-environment` and `UIBackgroundModes = remote-notification` were removed; the app does not use push. Re-add only if you implement FCM/APNs later. |
 
 **Action:**  
-1. Add **NSPhotoLibraryUsageDescription** in the target’s Info (or custom Info.plist) with a short, accurate reason.  
-2. Either implement push notifications or remove `remote-notification` and the Push Notifications capability/entitlement.
+1. ~~Add NSPhotoLibraryUsageDescription~~ — done.  
+2. ~~Push~~ — unused declarations removed from entitlements and Info.
 
 ---
 
@@ -118,8 +118,7 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
 
 ## 11. Display name and branding
 
-- **Current:** `CFBundleDisplayName` = **"Jitterbug80s"**.  
-- **Suggestion:** If you want the home screen to show **"80's Jitterbug"**, set `CFBundleDisplayName` to **"80's Jitterbug"** in the target’s Info.
+- **Current:** `CFBundleDisplayName` = **"80's Jitterbug"** (target Info / build settings).
 
 ---
 
@@ -135,9 +134,7 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
 
 ### Must fix before submission
 
-1. **Add NSPhotoLibraryUsageDescription**  
-   - Reason: Admin uses PhotosPicker to add photos to the gallery.  
-   - Add in Xcode: Target → Info → Custom iOS Target Properties → add key `Privacy - Photo Library Usage Description` (or `NSPhotoLibraryUsageDescription`) with a short, accurate string.
+1. ~~**NSPhotoLibraryUsageDescription**~~ — already set on the target.
 
 2. **App Store Connect**  
    - Set **Privacy Policy URL** (e.g. `https://jitterbug80s.web.app/privacy/`).  
@@ -145,12 +142,10 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
    - Complete **App Privacy** for: name, email, phone (booking); optionally User ID (admin); purposes = App functionality / Account management; third parties = Firebase (and ImgBB if you disclose it).  
    - Complete **Age rating** questionnaire (expect 4+).
 
-3. **Push / background**  
-   - Either implement push notifications or remove `UIBackgroundModes = remote-notification` and the Push Notifications capability so you don’t declare unused capabilities.
+3. ~~**Push / background**~~ — unused push entitlements and `remote-notification` background mode removed from the project.
 
 ### Recommended
 
-- Set **CFBundleDisplayName** to **"80's Jitterbug"** if that’s your public name.  
 - In **Privacy Policy** (web), mention Firestore, Firebase Auth, and ImgBB (for admin gallery uploads).  
 - Add a sentence on how users can request **deletion of their data** (e.g. contact you).  
 - Run an **accessibility** pass (VoiceOver, Accessibility Inspector).  
@@ -173,8 +168,8 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
 | Privacy Policy URL (App Store Connect) | Set required URL |
 | Support URL (App Store Connect) | Set required URL |
 | App Privacy (data types & purposes) | Complete in App Store Connect |
-| NSPhotoLibraryUsageDescription | **Add** (required for PhotosPicker) |
-| Push / remote-notification | Remove or implement |
+| NSPhotoLibraryUsageDescription | ✅ Set |
+| Push / remote-notification | ✅ Removed (unused) |
 | Export compliance | ✅ Set (NO) |
 | Sign in with Apple | ✅ N/A |
 | Account deletion | N/A for users; document if asked |

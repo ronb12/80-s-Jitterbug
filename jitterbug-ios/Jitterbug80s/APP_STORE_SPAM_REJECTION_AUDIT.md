@@ -98,9 +98,9 @@ No issue.
 
 | Check | Status | Notes |
 |-------|--------|--------|
-| Push notifications | ⚠️ **Declared, not implemented** | `UIBackgroundModes = remote-notification` and `aps-environment` are set, but the app does not register for or handle push. Reviewers can reject for “declared but not used.” |
+| Push notifications | ✅ **Resolved** | Unused `aps-environment` and `remote-notification` were removed from the project. Add them back only when implementing APNs/FCM. |
 
-**Recommendation:** Either implement push (e.g. booking updates) or remove the Push Notifications capability and `remote-notification` from the target so the binary matches what the app does.
+**Recommendation:** ~~Remove unused push declarations~~ — done.
 
 ---
 
@@ -110,8 +110,8 @@ No issue.
 |----------|--------|
 | **High** | **Gallery empty state:** Replace or reword "Coming soon" so the app doesn’t look incomplete (e.g. "Gallery" / "From our events" + same explanatory copy and CTA). |
 | **High** | **App Store Connect:** Set **Support URL** and **Privacy Policy URL**; use an accurate, non-stuffed **title**, **subtitle**, **description**, and **keywords**. |
-| **Medium** | **Display name:** Set **CFBundleDisplayName** to **"80's Jitterbug"** in Xcode if that’s your public name. |
-| **Medium** | **Push:** Either implement push or remove the Push Notifications capability and `remote-notification` background mode. |
+| **Medium** | **Display name:** `CFBundleDisplayName` is **"80's Jitterbug"** in the target; confirm before submit. |
+| ~~**Medium**~~ | ~~**Push:**~~ Removed unused push declarations from the project. |
 | **Low** | **Links:** Confirm `https://jitterbug80s.web.app` (contact, privacy) is live and correct before submit. |
 
 ---
@@ -126,4 +126,4 @@ No issue.
 - **No placeholder or lorem** outside the single gallery empty state.
 - **Consistent branding** (80s, neon, pink) and real content on Home, Packages, FAQ, About.
 
-Addressing the **Gallery "Coming soon"** wording and **metadata/capabilities** (Support/Privacy URLs, title/keywords, push or remove) will significantly reduce the chance of a spam-related rejection.
+Addressing the **Gallery "Coming soon"** wording and **metadata** (Support/Privacy URLs, title/keywords) will significantly reduce the chance of a spam-related rejection.

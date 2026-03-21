@@ -611,7 +611,6 @@
 				INFOPLIST_KEY_CFBundleVersion = 1;
 				INFOPLIST_KEY_ImgbbApiKey = 104f8f42bea1e4b53ea89574a6a5399b;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Bradley Virtual Solutions, LLC. All rights reserved.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "80's Jitterbug uses your photo library so admins can add photos to the event gallery.";
@@ -666,7 +665,6 @@
 				INFOPLIST_KEY_CFBundleVersion = 1;
 				INFOPLIST_KEY_ImgbbApiKey = 104f8f42bea1e4b53ea89574a6a5399b;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 Bradley Virtual Solutions, LLC. All rights reserved.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "80's Jitterbug uses your photo library so admins can add photos to the event gallery.";

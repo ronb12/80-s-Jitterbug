@@ -4,7 +4,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /bookings/{bookingId} {
       // Public booking form must not set payment fields (only Cloud Functions / admin).
-      allow create: if !request.resource.data.keys().hasAny(['depositPaid', 'stripeCheckoutSessionId']);
+      allow create: if !request.resource.data.keys().hasAny([
+        'depositPaid',
+        'stripeCheckoutSessionId',
+        'stripePaymentIntentId'
+      ]);
       allow read, update, delete: if request.auth != null;
     }
     match /settings/{docId} {
