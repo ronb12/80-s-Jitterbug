@@ -21,6 +21,10 @@ Firebase project: **jitterbug80s**
 
 Full setup, env vars, scripts, and hosting steps: **[`jitterbug-site/README.md`](jitterbug-site/README.md)**
 
+### Vercel (this monorepo)
+
+Prefer **Root Directory = `jitterbug-site`** in the Vercel project, or use the repo-root **`vercel.json`** (two-step `npm ci` + `outputDirectory`). See **[`VERCEL-ROOT.md`](VERCEL-ROOT.md)** if you see **“No Next.js version detected”**.
+
 ---
 
 ## Quick start (website)

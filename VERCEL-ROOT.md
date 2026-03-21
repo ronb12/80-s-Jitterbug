@@ -16,11 +16,13 @@ This repo includes a **root `vercel.json`** that runs:
 - `cd jitterbug-site && npm run build`
 - **`outputDirectory`: `jitterbug-site/.next`** — so Vercel finds `routes-manifest.json` and the rest of the Next output (without this, Vercel looks for `.next` at the repo root and the deploy fails).
 
-and a **root `package.json`** that lists `next` so framework detection succeeds when the project root is the **repository** root.
+- **`installCommand`: `npm ci && cd jitterbug-site && npm ci`** — installs **root** `node_modules` (so `next` exists at the repo root for Vercel’s framework detector), then installs the real app under **`jitterbug-site/`**.
 
-There is **no** `package-lock.json` at the repo root (it’s gitignored on purpose) so Next.js doesn’t warn about multiple lockfiles; installs use **`jitterbug-site/package-lock.json`** via `installCommand`.
+A **root `package-lock.json`** is committed next to the stub **`package.json`** (both list `next`) so the first `npm ci` is deterministic.
 
 **Dashboard:** If you set **Output Directory** manually in Vercel, clear it or set it to **`jitterbug-site/.next`** so it matches this repo (a bare `.next` at the repo root is wrong).
+
+**Framework preset:** If detection still fails, set **Framework Preset** to **Next.js** (Project → Settings → General).
 
 Redeploy after pulling these files.
 
