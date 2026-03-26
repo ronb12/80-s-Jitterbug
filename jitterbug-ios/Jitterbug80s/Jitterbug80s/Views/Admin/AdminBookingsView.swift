@@ -438,6 +438,7 @@ struct AdminAddBookingSheet: View {
 }
 
 struct AdminBookingDetailView: View {
+    @Environment(\.openURL) private var openURL
     let booking: Booking
     var onDismiss: () -> Void
     var onUpdated: () -> Void
@@ -462,6 +463,15 @@ struct AdminBookingDetailView: View {
     @State private var changeRequests: [BookingChangeRequest] = []
     @State private var bookingEvents: [BookingEvent] = []
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
+    @State private var emailClientError: String?
+
+    private var latestSignedContract: SignedDocumentSnapshot? {
+        signedDocuments.first { $0.type == "contract" }
+    }
+
+    private var latestSignedPhotoRelease: SignedDocumentSnapshot? {
+        signedDocuments.first { $0.type == "photo_release" }
+    }
 
     init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
         self.booking = booking
@@ -683,14 +693,25 @@ struct AdminBookingDetailView: View {
                     }
                 }
                 Section {
-                    Link("Email client", destination: URL(string: "mailto:\(booking.email)")!)
+                    Button("Email client") {
+                        openEmailClient()
+                    }
+                    if let emailClientError {
+                        Text(emailClientError)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Section("Print") {
                     Button {
-                        PrintService.printContract(booking: booking, ownerName: contactOwnerName, contactEmail: contactEmail, contactPhone: contactPhone)
+                        if let signed = latestSignedContract {
+                            PrintService.printHtml(signed.html)
+                        } else {
+                            PrintService.printContract(booking: booking, ownerName: contactOwnerName, contactEmail: contactEmail, contactPhone: contactPhone)
+                        }
                     } label: {
                         Label {
-                            Text("Print contract")
+                            Text(latestSignedContract == nil ? "Print contract" : "Print signed contract")
                         } icon: {
                             Image(systemName: "doc.richtext")
                                 .symbolRenderingMode(.multicolor)
@@ -698,10 +719,14 @@ struct AdminBookingDetailView: View {
                     }
                     .disabled(contactEmail.isEmpty)
                     Button {
-                        PrintService.printPhotoRelease(booking: booking, contactEmail: contactEmail, contactPhone: contactPhone)
+                        if let signed = latestSignedPhotoRelease {
+                            PrintService.printHtml(signed.html)
+                        } else {
+                            PrintService.printPhotoRelease(booking: booking, contactEmail: contactEmail, contactPhone: contactPhone)
+                        }
                     } label: {
                         Label {
-                            Text("Print photo release")
+                            Text(latestSignedPhotoRelease == nil ? "Print photo release" : "Print signed photo release")
                         } icon: {
                             Image(systemName: "doc")
                                 .symbolRenderingMode(.multicolor)
@@ -871,6 +896,28 @@ struct AdminBookingDetailView: View {
                 bookingEvents = nextEvents
                 signedDocuments = nextDocs
                 onUpdated()
+            }
+        }
+    }
+
+    private func openEmailClient() {
+        emailClientError = nil
+        let trimmedEmail = booking.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedEmail.isEmpty else {
+            emailClientError = "This booking has no email address."
+            return
+        }
+        guard let encoded = trimmedEmail.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "mailto:\(encoded)")
+        else {
+            emailClientError = "Could not create email link. Copied address instead."
+            jbCopyStringToPasteboard(trimmedEmail)
+            return
+        }
+        openURL(url) { accepted in
+            if !accepted {
+                jbCopyStringToPasteboard(trimmedEmail)
+                emailClientError = "No mail app available here. Email copied to clipboard."
             }
         }
     }

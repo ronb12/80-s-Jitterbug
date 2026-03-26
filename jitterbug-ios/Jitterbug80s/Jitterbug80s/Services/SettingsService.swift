@@ -1,6 +1,19 @@
 import Foundation
 import FirebaseFirestore
 
+private struct PublicSiteSettingsJSON: Decodable {
+    let ownerName: String?
+    let contactEmail: String?
+    let contactPhone: String?
+    let serviceArea: String?
+    let stripePublicBaseUrl: String?
+    let stripeCheckoutEnabled: Bool?
+    let stripeDepositCents: Int?
+    let stripePublishableKeyTest: String?
+    let stripePublishableKeyLive: String?
+    let stripeMode: String?
+}
+
 struct SiteSettings {
     var ownerName: String
     var contactEmail: String
@@ -38,6 +51,14 @@ final class SettingsService {
     private let docPath = "settings/site"
 
     func getSiteSettings() async -> SiteSettings {
+        let firestoreSettings = await readFirestoreSettings()
+        if let apiSettings = await fetchPublicSiteSettings(baseURL: firestoreSettings.stripePublicBaseUrl) {
+            return apiSettings
+        }
+        return firestoreSettings
+    }
+
+    private func readFirestoreSettings() async -> SiteSettings {
         do {
             let snap = try await db.document(docPath).getDocument()
             guard snap.exists, let data = snap.data() else { return .default }
@@ -64,6 +85,45 @@ final class SettingsService {
             )
         } catch {
             return .default
+        }
+    }
+
+    private func fetchPublicSiteSettings(baseURL: String) async -> SiteSettings? {
+        var base = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        while base.hasSuffix("/") { base.removeLast() }
+        if base.isEmpty {
+            base = SiteSettings.default.stripePublicBaseUrl
+        }
+        guard let url = URL(string: "\(base)/api/data/site-settings") else { return nil }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                return nil
+            }
+            let decoded = try JSONDecoder().decode(PublicSiteSettingsJSON.self, from: data)
+            let mode = (decoded.stripeMode ?? "test").lowercased() == "live" ? "live" : "test"
+            let resolvedBaseRaw = decoded.stripePublicBaseUrl?.trimmingCharacters(in: .whitespacesAndNewlines) ?? base
+            let resolvedBase = resolvedBaseRaw.hasSuffix("/") ? String(resolvedBaseRaw.dropLast()) : resolvedBaseRaw
+            return SiteSettings(
+                ownerName: decoded.ownerName?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? SiteSettings.default.ownerName,
+                contactEmail: decoded.contactEmail?.trimmingCharacters(in: .whitespacesAndNewlines) ?? SiteSettings.default.contactEmail,
+                contactPhone: decoded.contactPhone?.trimmingCharacters(in: .whitespacesAndNewlines) ?? SiteSettings.default.contactPhone,
+                serviceArea: decoded.serviceArea?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? SiteSettings.default.serviceArea,
+                stripePublicBaseUrl: resolvedBase,
+                stripeCheckoutEnabled: decoded.stripeCheckoutEnabled ?? false,
+                stripeDepositCents: max(50, decoded.stripeDepositCents ?? SiteSettings.default.stripeDepositCents),
+                stripePublishableKeyTest: decoded.stripePublishableKeyTest?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+                stripePublishableKeyLive: decoded.stripePublishableKeyLive?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+                stripeMode: mode
+            )
+        } catch {
+            return nil
         }
     }
 
