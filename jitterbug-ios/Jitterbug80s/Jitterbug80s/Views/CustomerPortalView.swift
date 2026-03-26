@@ -2,6 +2,8 @@ import SwiftUI
 import FirebaseAuth
 import FirebaseFirestore
 
+private let portalAccent = Color(red: 0.93, green: 0.28, blue: 0.6)
+
 struct CustomerPortalView: View {
     @State private var user: User?
     @State private var email = ""
@@ -13,6 +15,36 @@ struct CustomerPortalView: View {
     @State private var bookings: [Booking] = []
     @State private var bookingsListener: ListenerRegistration?
     @State private var authListener: AuthStateDidChangeListenerHandle?
+
+    private var fieldBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGray6)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color.gray.opacity(0.12)
+        #endif
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #elseif os(macOS)
+        Color(nsColor: .windowBackgroundColor)
+        #else
+        Color.white
+        #endif
+    }
+
+    private var groupedBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemGroupedBackground)
+        #elseif os(macOS)
+        Color(nsColor: .underPageBackgroundColor)
+        #else
+        Color.gray.opacity(0.08)
+        #endif
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,7 +67,15 @@ struct CustomerPortalView: View {
                     accountHome
                 }
             }
-            .navigationTitle("My Account")
+            .background(groupedBackground)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("My Account")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(portalAccent)
+                }
+            }
         }
         .jitterbugMacNavigationRootFill()
         .onAppear {
@@ -48,48 +88,90 @@ struct CustomerPortalView: View {
     }
 
     private var authForm: some View {
-        Form {
-            Section(isCreatingAccount ? "Create account" : "Sign in") {
-                TextField("Email", text: $email)
-                    #if os(iOS)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                SecureField("Password", text: $password)
-                if isCreatingAccount {
-                    SecureField("Confirm password", text: $confirmPassword)
+        ScrollView {
+            VStack(spacing: 18) {
+                VStack(spacing: 6) {
+                    Text(isCreatingAccount ? "Create your portal account" : "Sign in to your portal")
+                        .font(.title3.weight(.semibold))
+                    Text("Track bookings, payments, and signed documents in one place.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-            }
-            if let error {
-                Section { Text(error).foregroundStyle(.red) }
-            }
-            Section {
-                Button(isCreatingAccount ? "Create account" : "Sign in") {
-                    submitAuth()
+                .padding(.top, 6)
+
+                VStack(spacing: 12) {
+                    TextField("Email", text: $email)
+                        #if os(iOS)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .autocorrectionDisabled()
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(fieldBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    SecureField("Password", text: $password)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(fieldBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    if isCreatingAccount {
+                        SecureField("Confirm password", text: $confirmPassword)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(fieldBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+
+                    if let error {
+                        Text(error)
+                            .font(.footnote)
+                            .foregroundStyle(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Button(isCreatingAccount ? "Create account" : "Sign in") {
+                        submitAuth()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(portalAccent)
+                    .frame(maxWidth: .infinity)
+                    .disabled(loading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+
+                    Button(isCreatingAccount ? "Have an account? Sign in" : "Need an account? Create one") {
+                        isCreatingAccount.toggle()
+                        error = nil
+                    }
+                    .foregroundStyle(portalAccent)
                 }
-                .disabled(loading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
-            }
-            Section {
-                Button(isCreatingAccount ? "Have an account? Sign in" : "Need an account? Create one") {
-                    isCreatingAccount.toggle()
-                    error = nil
+                .padding(18)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Portal benefits")
+                        .font(.headline)
+                    Text("Track all your bookings in one place, check payment status, and review booking details anytime.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             }
-            Section("Portal benefits") {
-                Text("Track all your bookings in one place, check payment status, and review booking details anytime.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 32)
         }
-        #if os(macOS)
-        .controlSize(.small)
-        #endif
-        .jitterbugMacInsetLeadingScrollableForm()
     }
 
     private var accountHome: some View {
-        List {
-            Section {
+        ScrollView {
+            VStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(user?.email ?? "")
                         .font(.subheadline.weight(.semibold))
@@ -97,14 +179,19 @@ struct CustomerPortalView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            Section("My bookings") {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("My bookings")
+                        .font(.headline)
                 if bookings.isEmpty {
                     Text("No bookings found for this account yet.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(bookings) { booking in
+                        ForEach(bookings) { booking in
                         NavigationLink {
                             CustomerBookingDetailView(booking: booking, user: user)
                         } label: {
@@ -123,18 +210,30 @@ struct CustomerPortalView: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(fieldBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
                 }
-            }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            Section {
                 Button("Sign out", role: .destructive) {
                     signOut()
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 32)
         }
-        .jitterbugMacListTightUnderNavigationTitle()
     }
 
     private func startAuthListener() {

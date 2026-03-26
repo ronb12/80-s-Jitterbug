@@ -223,7 +223,12 @@ final class BookingService {
             update["customerContractSignatureStrokes"] = signatureStrokes
         }
         try await updateBooking(id: booking.id, data: update)
-        try? await createSignedDocumentSnapshot(booking: booking, type: "contract", signedName: cleanedName)
+        try? await createSignedDocumentSnapshot(
+            booking: booking,
+            type: "contract",
+            signedName: cleanedName,
+            signatureStrokes: signatureStrokes
+        )
         try? await appendBookingEvent(
             bookingId: booking.id,
             type: "contract_signed",
@@ -251,7 +256,12 @@ final class BookingService {
             update["customerPhotoReleaseSignatureStrokes"] = signatureStrokes
         }
         try await updateBooking(id: booking.id, data: update)
-        try? await createSignedDocumentSnapshot(booking: booking, type: "photo_release", signedName: cleanedName)
+        try? await createSignedDocumentSnapshot(
+            booking: booking,
+            type: "photo_release",
+            signedName: cleanedName,
+            signatureStrokes: signatureStrokes
+        )
         try? await appendBookingEvent(
             bookingId: booking.id,
             type: "photo_release_signed",
@@ -438,15 +448,24 @@ final class BookingService {
         _ = try await db.collection(collectionId).document(bookingId).collection("events").addDocument(data: payload)
     }
 
-    private func createSignedDocumentSnapshot(booking: Booking, type: String, signedName: String) async throws {
+    private func createSignedDocumentSnapshot(
+        booking: Booking,
+        type: String,
+        signedName: String,
+        signatureStrokes: [[String: Any]]
+    ) async throws {
         let settings = await SettingsService().getSiteSettings()
+        let signedAtIso = ISO8601DateFormatter().string(from: Date())
         let html: String
         let fileName: String
         if type == "photo_release" {
             html = PrintService.htmlForPhotoRelease(
                 booking: booking,
                 contactEmail: settings.contactEmail,
-                contactPhone: settings.contactPhone
+                contactPhone: settings.contactPhone,
+                signedName: signedName,
+                signedAt: signedAtIso,
+                signatureStrokes: signatureStrokes
             )
             fileName = "signed-photo-release-\(booking.bookingRef)"
         } else {
@@ -454,7 +473,10 @@ final class BookingService {
                 booking: booking,
                 ownerName: settings.ownerName,
                 contactEmail: settings.contactEmail,
-                contactPhone: settings.contactPhone
+                contactPhone: settings.contactPhone,
+                signedName: signedName,
+                signedAt: signedAtIso,
+                signatureStrokes: signatureStrokes
             )
             fileName = "signed-contract-\(booking.bookingRef)"
         }

@@ -21,13 +21,61 @@ enum PrintService {
         return f.string(from: date)
     }
 
+    private static func signatureSVG(from signatureStrokes: [[String: Any]]) -> String? {
+        var pathParts: [String] = []
+        for stroke in signatureStrokes {
+            guard let points = stroke["points"] as? [[String: Any]] else { continue }
+            var strokePoints: [(Double, Double)] = []
+            for point in points {
+                guard let x = point["x"] as? Double, let y = point["y"] as? Double else { continue }
+                strokePoints.append((x, y))
+            }
+            guard let first = strokePoints.first else { continue }
+            var part = "M \(first.0) \(first.1)"
+            for p in strokePoints.dropFirst() {
+                part += " L \(p.0) \(p.1)"
+            }
+            pathParts.append(part)
+        }
+        guard !pathParts.isEmpty else { return nil }
+        let d = pathParts.joined(separator: " ")
+        return """
+        <svg viewBox="0 0 320 180" width="320" height="180" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border:1px solid #ddd;border-radius:8px;">
+          <path d="\(d)" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        """
+    }
+
     /// Generate HTML for the full booking contract. Contact info from settings.
-    static func htmlForContract(booking: Booking, ownerName: String, contactEmail: String, contactPhone: String) -> String {
+    static func htmlForContract(
+        booking: Booking,
+        ownerName: String,
+        contactEmail: String,
+        contactPhone: String,
+        signedName: String? = nil,
+        signedAt: String? = nil,
+        signatureStrokes: [[String: Any]] = []
+    ) -> String {
         let b = booking
         let termsHtml = BookingContractTerms.all.map { term in
             "<div class=\"section\"><h2>\(escapeHtml(term.title))</h2><p>\(escapeHtml(term.body))</p></div>"
         }.joined(separator: "\n  ")
         let messageBlock = b.message.isEmpty ? "" : "<div class=\"section\"><h2>Message</h2><p>\(escapeHtml(b.message))</p></div>"
+        let signatureBlock: String = {
+            let cleanName = signedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let signedDateRaw = signedAt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let signedDate = signedDateRaw.isEmpty ? "" : formatDate(signedDateRaw)
+            let svg = signatureSVG(from: signatureStrokes)
+            if cleanName.isEmpty && signedDate.isEmpty && svg == nil { return "" }
+            return """
+              <div class="section">
+                <h2>Customer signature</h2>
+                \(cleanName.isEmpty ? "" : "<p><strong>Signed by:</strong> \(escapeHtml(cleanName))</p>")
+                \(signedDate.isEmpty ? "" : "<p><strong>Signed at:</strong> \(escapeHtml(signedDate))</p>")
+                \(svg ?? "")
+              </div>
+            """
+        }()
         return """
 <!DOCTYPE html>
 <html>
@@ -88,6 +136,7 @@ enum PrintService {
   <h2 style="margin-top: 28px; font-size: 1rem; color: #333;">Terms of This Contract</h2>
   <p class="sub" style="margin-bottom: 12px;">The following terms form part of this contract. By signing below, the client agrees to these terms.</p>
   \(termsHtml)
+  \(signatureBlock)
   <div class="contact-box">
     <strong>Questions?</strong> Contact \(escapeHtml(ownerName)): \(escapeHtml(contactEmail)) · \(escapeHtml(contactPhone))
   </div>
@@ -100,12 +149,34 @@ enum PrintService {
     }
 
     /// Generate HTML for photo release form. Pass nil for blank form.
-    static func htmlForPhotoRelease(booking: Booking?, contactEmail: String, contactPhone: String) -> String {
+    static func htmlForPhotoRelease(
+        booking: Booking?,
+        contactEmail: String,
+        contactPhone: String,
+        signedName: String? = nil,
+        signedAt: String? = nil,
+        signatureStrokes: [[String: Any]] = []
+    ) -> String {
         let clientName = booking.map { escapeHtml($0.name) } ?? ""
         let eventDate = booking?.eventDate ?? ""
         let marketingYesNo = booking.map { $0.photoReleaseConsent ? "Yes" : "No" } ?? "__________"
         let minorsYesNo = booking.map { $0.photoReleaseIncludesMinors ? "Yes" : "No" } ?? "__________"
         let refLine = booking.map { "<tr><th>Booking ref</th><td>\(escapeHtml($0.bookingRef))</td></tr>" } ?? ""
+        let signatureBlock: String = {
+            let cleanName = signedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let signedDateRaw = signedAt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let signedDate = signedDateRaw.isEmpty ? "" : formatDate(signedDateRaw)
+            let svg = signatureSVG(from: signatureStrokes)
+            if cleanName.isEmpty && signedDate.isEmpty && svg == nil { return "" }
+            return """
+              <div class="section">
+                <h2>Customer signature</h2>
+                \(cleanName.isEmpty ? "" : "<p><strong>Signed by:</strong> \(escapeHtml(cleanName))</p>")
+                \(signedDate.isEmpty ? "" : "<p><strong>Signed at:</strong> \(escapeHtml(signedDate))</p>")
+                \(svg ?? "")
+              </div>
+            """
+        }()
         return """
 <!DOCTYPE html>
 <html>
@@ -141,6 +212,7 @@ enum PrintService {
     <p>I understand that 80's Jitterbug will not use images of minors (e.g. children) for marketing unless I have separately granted "minor permission" above or in my booking.</p>
     <p>I warrant that I have authority to agree to the use of likeness of attendees at my event (or have obtained consent where required). I may withdraw this permission later by contacting 80's Jitterbug.</p>
   </div>
+  \(signatureBlock)
   <div class="sig-line">
     <p>Signature: <span></span> &nbsp; Date: <span></span></p>
   </div>
