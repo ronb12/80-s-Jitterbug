@@ -6,6 +6,24 @@ final class BookingService {
     private let db = FirebaseManager.shared.db
     private let collectionId = "bookings"
 
+    struct BookingSignaturesSnapshot {
+        var contractSignedName: String?
+        var contractSignedAt: String?
+        var contractSignatureStrokes: [[String: Any]]
+        var photoReleaseSignedName: String?
+        var photoReleaseSignedAt: String?
+        var photoReleaseSignatureStrokes: [[String: Any]]
+
+        static let empty = BookingSignaturesSnapshot(
+            contractSignedName: nil,
+            contractSignedAt: nil,
+            contractSignatureStrokes: [],
+            photoReleaseSignedName: nil,
+            photoReleaseSignedAt: nil,
+            photoReleaseSignatureStrokes: []
+        )
+    }
+
     private static func isoString(from value: Any?) -> String {
         if let t = value as? Timestamp { return ISO8601DateFormatter().string(from: t.dateValue()) }
         if let s = value as? String { return s }
@@ -351,6 +369,113 @@ final class BookingService {
         }
     }
 
+    @discardableResult
+    func observeBookingMessages(bookingId: String, onChange: @escaping ([BookingMessage]) -> Void) -> ListenerRegistration {
+        db.collection(collectionId)
+            .document(bookingId)
+            .collection("messages")
+            .order(by: "createdAt", descending: false)
+            .addSnapshotListener { snap, _ in
+                let list = (snap?.documents ?? []).map { d in
+                    let data = d.data()
+                    return BookingMessage(
+                        id: d.documentID,
+                        text: data["text"] as? String ?? "",
+                        senderEmail: data["senderEmail"] as? String ?? "",
+                        senderRole: data["senderRole"] as? String ?? "customer",
+                        createdAt: Self.isoString(from: data["createdAt"])
+                    )
+                }
+                onChange(list)
+            }
+    }
+
+    func sendCustomerMessage(booking: Booking, text: String, senderEmail: String) async throws {
+        try await sendMessage(
+            booking: booking,
+            text: text,
+            senderEmail: senderEmail,
+            senderRole: "customer",
+            targetRole: "admin"
+        )
+    }
+
+    func sendAdminMessage(booking: Booking, text: String, senderEmail: String) async throws {
+        try await sendMessage(
+            booking: booking,
+            text: text,
+            senderEmail: senderEmail,
+            senderRole: "admin",
+            targetRole: "customer"
+        )
+    }
+
+    private func sendMessage(
+        booking: Booking,
+        text: String,
+        senderEmail: String,
+        senderRole: String,
+        targetRole: String
+    ) async throws {
+        let cleanText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanEmail = senderEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !cleanText.isEmpty, !cleanEmail.isEmpty else { return }
+        let payload: [String: Any] = [
+            "text": cleanText,
+            "senderEmail": cleanEmail,
+            "senderRole": senderRole,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        _ = try await db.collection(collectionId)
+            .document(booking.id)
+            .collection("messages")
+            .addDocument(data: payload)
+
+        let notification: [String: Any] = [
+            "bookingId": booking.id,
+            "bookingRef": booking.bookingRef,
+            "targetEmail": targetRole == "customer" ? booking.email.lowercased() : "",
+            "targetRole": targetRole,
+            "senderEmail": cleanEmail,
+            "message": cleanText,
+            "isRead": false,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        _ = try await db.collection("notifications").addDocument(data: notification)
+    }
+
+    @discardableResult
+    func observeCustomerNotifications(
+        email: String,
+        onChange: @escaping ([CustomerNotification]) -> Void
+    ) -> ListenerRegistration {
+        let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return db.collection("notifications")
+            .whereField("targetRole", isEqualTo: "customer")
+            .whereField("targetEmail", isEqualTo: normalized)
+            .order(by: "createdAt", descending: true)
+            .addSnapshotListener { snap, _ in
+                let list = (snap?.documents ?? []).map { d in
+                    let data = d.data()
+                    return CustomerNotification(
+                        id: d.documentID,
+                        bookingId: data["bookingId"] as? String ?? "",
+                        bookingRef: data["bookingRef"] as? String ?? "",
+                        message: data["message"] as? String ?? "",
+                        senderEmail: data["senderEmail"] as? String ?? "",
+                        createdAt: Self.isoString(from: data["createdAt"]),
+                        isRead: data["isRead"] as? Bool ?? false
+                    )
+                }
+                onChange(list)
+            }
+    }
+
+    func markNotificationRead(notificationId: String) async {
+        guard !notificationId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        try? await db.collection("notifications").document(notificationId).updateData(["isRead": true])
+    }
+
     func resolveChangeRequest(bookingId: String, requestId: String, status: String) async throws {
         guard status == "approved" || status == "rejected" else { return }
         try await db.collection(collectionId)
@@ -436,6 +561,25 @@ final class BookingService {
 
     func deleteBooking(id: String) async throws {
         try await db.collection(collectionId).document(id).delete()
+    }
+
+    func getBookingSignaturesSnapshot(bookingId: String) async -> BookingSignaturesSnapshot {
+        do {
+            let doc = try await db.collection(collectionId).document(bookingId).getDocument()
+            guard let data = doc.data() else { return .empty }
+            let contractStrokes = (data["customerContractSignatureStrokes"] as? [[String: Any]]) ?? []
+            let photoStrokes = (data["customerPhotoReleaseSignatureStrokes"] as? [[String: Any]]) ?? []
+            return BookingSignaturesSnapshot(
+                contractSignedName: (data["customerContractSignedName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                contractSignedAt: Self.isoString(from: data["customerContractSignedAt"]),
+                contractSignatureStrokes: contractStrokes,
+                photoReleaseSignedName: (data["customerPhotoReleaseSignedName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                photoReleaseSignedAt: Self.isoString(from: data["customerPhotoReleaseSignedAt"]),
+                photoReleaseSignatureStrokes: photoStrokes
+            )
+        } catch {
+            return .empty
+        }
     }
 
     private func appendBookingEvent(bookingId: String, type: String, message: String, actorEmail: String) async throws {

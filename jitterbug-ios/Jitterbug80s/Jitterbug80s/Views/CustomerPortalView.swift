@@ -13,7 +13,9 @@ struct CustomerPortalView: View {
     @State private var loading = false
     @State private var error: String?
     @State private var bookings: [Booking] = []
+    @State private var notifications: [CustomerNotification] = []
     @State private var bookingsListener: ListenerRegistration?
+    @State private var notificationsListener: ListenerRegistration?
     @State private var authListener: AuthStateDidChangeListenerHandle?
 
     private var fieldBackground: Color {
@@ -68,7 +70,9 @@ struct CustomerPortalView: View {
                 }
             }
             .background(groupedBackground)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text("My Account")
@@ -84,6 +88,7 @@ struct CustomerPortalView: View {
         .onDisappear {
             stopAuthListener()
             stopBookingsListener()
+            stopNotificationsListener()
         }
     }
 
@@ -223,6 +228,53 @@ struct CustomerPortalView: View {
                 .background(cardBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Notification center")
+                            .font(.headline)
+                        Spacer()
+                        let unreadCount = notifications.filter { !$0.isRead }.count
+                        if unreadCount > 0 {
+                            Text("\(unreadCount)")
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(portalAccent.opacity(0.18))
+                                .foregroundStyle(portalAccent)
+                                .clipShape(Capsule())
+                        }
+                    }
+                    if notifications.isEmpty {
+                        Text("No notifications yet.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(notifications.prefix(8)) { note in
+                            Button {
+                                Task { await BookingService().markNotificationRead(notificationId: note.id) }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(note.message)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.primary)
+                                    Text("\(note.bookingRef) · \(note.createdAt)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(12)
+                                .background(note.isRead ? fieldBackground.opacity(0.5) : portalAccent.opacity(0.10))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+                .background(cardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+
                 Button("Sign out", role: .destructive) {
                     signOut()
                 }
@@ -245,9 +297,12 @@ struct CustomerPortalView: View {
                 error = nil
                 if let email = current?.email {
                     startBookingsListener(email: email)
+                    startNotificationsListener(email: email)
                 } else {
                     stopBookingsListener()
+                    stopNotificationsListener()
                     bookings = []
+                    notifications = []
                 }
             }
         }
@@ -271,6 +326,20 @@ struct CustomerPortalView: View {
     private func stopBookingsListener() {
         bookingsListener?.remove()
         bookingsListener = nil
+    }
+
+    private func startNotificationsListener(email: String) {
+        stopNotificationsListener()
+        notificationsListener = BookingService().observeCustomerNotifications(email: email) { next in
+            DispatchQueue.main.async {
+                notifications = next
+            }
+        }
+    }
+
+    private func stopNotificationsListener() {
+        notificationsListener?.remove()
+        notificationsListener = nil
     }
 
     private func submitAuth() {
@@ -324,6 +393,10 @@ private struct CustomerBookingDetailView: View {
     @State private var payError: String?
     @State private var changeRequestText = ""
     @State private var changeRequestSaving = false
+    @State private var messageText = ""
+    @State private var messageSending = false
+    @State private var messages: [BookingMessage] = []
+    @State private var messagesListener: ListenerRegistration?
     @State private var bookingEvents: [BookingEvent] = []
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
     @State private var showContractTerms = false
@@ -476,6 +549,33 @@ private struct CustomerBookingDetailView: View {
                     }
                 }
             }
+            Section("Messages") {
+                if messages.isEmpty {
+                    Text("No messages yet. Send a message to the admin team.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(messages) { msg in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(msg.senderRole == "admin" ? "Admin" : "You")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(msg.senderRole == "admin" ? .secondary : portalAccent)
+                            Text(msg.text)
+                                .font(.subheadline)
+                            Text(msg.createdAt)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 2)
+                    }
+                }
+                TextField("Send a message to admin", text: $messageText, axis: .vertical)
+                    .lineLimit(2...5)
+                Button(messageSending ? "Sending…" : "Send message") {
+                    sendMessageToAdmin()
+                }
+                .disabled(messageSending || messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
             Section("Request changes") {
                 TextField("Request date, package, or detail changes", text: $changeRequestText, axis: .vertical)
                     .lineLimit(2...5)
@@ -534,6 +634,12 @@ private struct CustomerBookingDetailView: View {
                     liveBooking = updated
                 }
             }
+            messagesListener?.remove()
+            messagesListener = BookingService().observeBookingMessages(bookingId: booking.id) { next in
+                DispatchQueue.main.async {
+                    messages = next
+                }
+            }
             Task {
                 let events = await BookingService().listBookingEvents(bookingId: booking.id)
                 let docs = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
@@ -554,6 +660,8 @@ private struct CustomerBookingDetailView: View {
         .onDisappear {
             bookingListener?.remove()
             bookingListener = nil
+            messagesListener?.remove()
+            messagesListener = nil
         }
         .sheet(isPresented: $showSignSheet) {
             CustomerContractSignSheet(booking: liveBooking, user: user) {
@@ -632,6 +740,32 @@ private struct CustomerBookingDetailView: View {
             } catch {
                 await MainActor.run {
                     changeRequestSaving = false
+                    payError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func sendMessageToAdmin() {
+        guard let senderEmail = user?.email?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !senderEmail.isEmpty else { return }
+        let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        messageSending = true
+        Task {
+            do {
+                try await BookingService().sendCustomerMessage(
+                    booking: liveBooking,
+                    text: text,
+                    senderEmail: senderEmail
+                )
+                await MainActor.run {
+                    messageSending = false
+                    messageText = ""
+                }
+            } catch {
+                await MainActor.run {
+                    messageSending = false
                     payError = error.localizedDescription
                 }
             }

@@ -1,5 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
+import FirebaseFirestore
+import FirebaseAuth
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -460,6 +462,10 @@ struct AdminBookingDetailView: View {
     @State private var stripePublishableKey = ""
     @State private var stripePayLoading = false
     @State private var stripePayError: String?
+    @State private var messageText = ""
+    @State private var messageSending = false
+    @State private var messages: [BookingMessage] = []
+    @State private var messagesListener: ListenerRegistration?
     @State private var changeRequests: [BookingChangeRequest] = []
     @State private var bookingEvents: [BookingEvent] = []
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
@@ -471,6 +477,11 @@ struct AdminBookingDetailView: View {
 
     private var latestSignedPhotoRelease: SignedDocumentSnapshot? {
         signedDocuments.first { $0.type == "photo_release" }
+    }
+
+    private func snapshotHasDrawnSignature(_ snapshot: SignedDocumentSnapshot?) -> Bool {
+        guard let html = snapshot?.html.lowercased() else { return false }
+        return html.contains("<svg") && html.contains("<path")
     }
 
     init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
@@ -634,6 +645,32 @@ struct AdminBookingDetailView: View {
                             LabeledContent("Status", value: "Not signed")
                         }
                     }
+                    Section("Messages") {
+                        if messages.isEmpty {
+                            Text("No messages yet.")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(messages) { msg in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(msg.senderRole == "admin" ? "You" : "Customer")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : .secondary)
+                                    Text(msg.text)
+                                        .font(.subheadline)
+                                    Text("\(msg.senderEmail) · \(msg.createdAt)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                        TextField("Send a message to customer", text: $messageText, axis: .vertical)
+                            .lineLimit(2...5)
+                        Button(messageSending ? "Sending…" : "Send message") {
+                            sendMessageToCustomer()
+                        }
+                        .disabled(messageSending || messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
                     if !changeRequests.isEmpty {
                         Section("Customer change requests") {
                             ForEach(changeRequests) { req in
@@ -704,11 +741,7 @@ struct AdminBookingDetailView: View {
                 }
                 Section("Print") {
                     Button {
-                        if let signed = latestSignedContract {
-                            PrintService.printHtml(signed.html)
-                        } else {
-                            PrintService.printContract(booking: booking, ownerName: contactOwnerName, contactEmail: contactEmail, contactPhone: contactPhone)
-                        }
+                        printContractDocument()
                     } label: {
                         Label {
                             Text(latestSignedContract == nil ? "Print contract" : "Print signed contract")
@@ -719,11 +752,7 @@ struct AdminBookingDetailView: View {
                     }
                     .disabled(contactEmail.isEmpty)
                     Button {
-                        if let signed = latestSignedPhotoRelease {
-                            PrintService.printHtml(signed.html)
-                        } else {
-                            PrintService.printPhotoRelease(booking: booking, contactEmail: contactEmail, contactPhone: contactPhone)
-                        }
+                        printPhotoReleaseDocument()
                     } label: {
                         Label {
                             Text(latestSignedPhotoRelease == nil ? "Print photo release" : "Print signed photo release")
@@ -792,10 +821,20 @@ struct AdminBookingDetailView: View {
                 changeRequests = await BookingService().listChangeRequests(bookingId: booking.id)
                 bookingEvents = await BookingService().listBookingEvents(bookingId: booking.id)
                 signedDocuments = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
+                messagesListener?.remove()
+                messagesListener = BookingService().observeBookingMessages(bookingId: booking.id) { next in
+                    DispatchQueue.main.async {
+                        messages = next
+                    }
+                }
             }
         }
         .jitterbugMacNavigationRootFill()
         .jitterbugMacSheetChromeIfNeeded()
+        .onDisappear {
+            messagesListener?.remove()
+            messagesListener = nil
+        }
     }
 
     private func openStripeDepositCheckout() {
@@ -900,6 +939,31 @@ struct AdminBookingDetailView: View {
         }
     }
 
+    private func sendMessageToCustomer() {
+        let senderEmail = FirebaseManager.shared.auth.currentUser?.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "admin"
+        let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        messageSending = true
+        Task {
+            do {
+                try await BookingService().sendAdminMessage(
+                    booking: booking,
+                    text: text,
+                    senderEmail: senderEmail
+                )
+                await MainActor.run {
+                    messageSending = false
+                    messageText = ""
+                }
+            } catch {
+                await MainActor.run {
+                    messageSending = false
+                    stripePayError = error.localizedDescription
+                }
+            }
+        }
+    }
+
     private func openEmailClient() {
         emailClientError = nil
         let trimmedEmail = booking.email.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -918,6 +982,49 @@ struct AdminBookingDetailView: View {
             if !accepted {
                 jbCopyStringToPasteboard(trimmedEmail)
                 emailClientError = "No mail app available here. Email copied to clipboard."
+            }
+        }
+    }
+
+    private func printContractDocument() {
+        if snapshotHasDrawnSignature(latestSignedContract), let signed = latestSignedContract {
+            PrintService.printHtml(signed.html)
+            return
+        }
+        Task {
+            let sig = await BookingService().getBookingSignaturesSnapshot(bookingId: booking.id)
+            let html = PrintService.htmlForContract(
+                booking: booking,
+                ownerName: contactOwnerName,
+                contactEmail: contactEmail,
+                contactPhone: contactPhone,
+                signedName: sig.contractSignedName ?? booking.customerContractSignedName,
+                signedAt: sig.contractSignedAt ?? booking.customerContractSignedAt,
+                signatureStrokes: sig.contractSignatureStrokes
+            )
+            await MainActor.run {
+                PrintService.printHtml(html)
+            }
+        }
+    }
+
+    private func printPhotoReleaseDocument() {
+        if snapshotHasDrawnSignature(latestSignedPhotoRelease), let signed = latestSignedPhotoRelease {
+            PrintService.printHtml(signed.html)
+            return
+        }
+        Task {
+            let sig = await BookingService().getBookingSignaturesSnapshot(bookingId: booking.id)
+            let html = PrintService.htmlForPhotoRelease(
+                booking: booking,
+                contactEmail: contactEmail,
+                contactPhone: contactPhone,
+                signedName: sig.photoReleaseSignedName ?? booking.customerPhotoReleaseSignedName,
+                signedAt: sig.photoReleaseSignedAt ?? booking.customerPhotoReleaseSignedAt,
+                signatureStrokes: sig.photoReleaseSignatureStrokes
+            )
+            await MainActor.run {
+                PrintService.printHtml(html)
             }
         }
     }

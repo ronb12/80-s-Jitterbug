@@ -67,6 +67,39 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /bookings/{bookingId}/messages/{messageId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && get(/databases/$(database)/documents/bookings/$(bookingId)).data.email == requesterEmail());
+      allow create: if isSignedIn()
+        && request.resource.data.senderEmail == requesterEmail()
+        && request.resource.data.text is string
+        && request.resource.data.senderRole in ["customer", "admin"]
+        && (
+          isAdmin()
+          || get(/databases/$(database)/documents/bookings/$(bookingId)).data.email == requesterEmail()
+        );
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.targetRole == "customer" && resource.data.targetEmail == requesterEmail());
+      allow create: if isSignedIn()
+        && request.resource.data.senderEmail == requesterEmail()
+        && request.resource.data.targetRole in ["admin", "customer"]
+        && request.resource.data.message is string
+        && (
+          isAdmin()
+          || request.resource.data.targetRole == "admin"
+        );
+      allow update: if isAdmin()
+        || (isSignedIn()
+          && resource.data.targetRole == "customer"
+          && resource.data.targetEmail == requesterEmail()
+          && request.resource.data.diff(resource.data).changedKeys().hasOnly(["isRead"]));
+      allow delete: if false;
+    }
+
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
