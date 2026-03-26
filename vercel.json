@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "npm ci && cd jitterbug-site && npm install",
+  "installCommand": "npm_config_loglevel=error npm ci && cd jitterbug-site && npm_config_loglevel=error npm install",
   "buildCommand": "cd jitterbug-site && npm run build",
   "outputDirectory": "jitterbug-site/.next"
 }
