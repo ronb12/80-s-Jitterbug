@@ -521,36 +521,65 @@ final class BookingService {
         }
     }
 
-    private func getBookingStatusByRefFromPublicAPI(_ normalizedRef: String) async -> BookingStatusPublic? {
+    /// Tries the configured site URL first, then known production defaults so lookup still works if
+    /// `stripePublicBaseUrl` in Firestore points at a stale host or a CDN without the API.
+    private func bookingLookupBaseURLs() async -> [String] {
         let settings = await SettingsService().getSiteSettings()
-        let base = Self.normalizePublicSiteBase(settings.stripePublicBaseUrl)
-        guard let url = URL(string: "\(base)/api/bookingLookup") else { return nil }
-
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["bookingRef": normalizedRef])
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: req)
-            guard let http = response as? HTTPURLResponse else { return nil }
-            if http.statusCode == 404 { return nil }
-            guard (200...299).contains(http.statusCode) else { return nil }
-            guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let booking = obj["booking"] as? [String: Any]
-            else { return nil }
-
-            let statusRaw = (booking["status"] as? String ?? "pending").lowercased()
-            return BookingStatusPublic(
-                status: BookingStatus(rawValue: statusRaw) ?? .pending,
-                eventDate: booking["eventDate"] as? String ?? "",
-                eventType: booking["eventType"] as? String ?? "",
-                eventLocation: booking["eventLocation"] as? String ?? "",
-                depositPaid: (booking["depositPaid"] as? Bool) ?? false
-            )
-        } catch {
-            return nil
+        let primary = Self.normalizePublicSiteBase(settings.stripePublicBaseUrl)
+        let defaults: [String] = [
+            primary,
+            Self.normalizePublicSiteBase(SiteSettings.default.stripePublicBaseUrl),
+            "https://jitterbug80s.web.app",
+            "https://jitterbug80s.firebaseapp.com"
+        ]
+        var seen = Set<String>()
+        var out: [String] = []
+        for raw in defaults {
+            let b = Self.normalizePublicSiteBase(raw)
+            guard !b.isEmpty, !seen.contains(b) else { continue }
+            seen.insert(b)
+            out.append(b)
         }
+        return out
+    }
+
+    private func getBookingStatusByRefFromPublicAPI(_ normalizedRef: String) async -> BookingStatusPublic? {
+        for base in await bookingLookupBaseURLs() {
+            guard let url = URL(string: "\(base)/api/bookingLookup") else { continue }
+
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try? JSONSerialization.data(withJSONObject: ["bookingRef": normalizedRef])
+            req.timeoutInterval = 25
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: req)
+                guard let http = response as? HTTPURLResponse else { continue }
+                if http.statusCode == 404 { continue }
+                guard (200...299).contains(http.statusCode) else { continue }
+                guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let booking = obj["booking"] as? [String: Any]
+                else { continue }
+
+                let statusRaw: String = {
+                    if let s = booking["status"] as? String { return s }
+                    if let n = booking["status"] as? Int { return String(n) }
+                    if let n = booking["status"] as? Int64 { return String(n) }
+                    return "pending"
+                }().lowercased()
+                return BookingStatusPublic(
+                    status: BookingStatus(rawValue: statusRaw) ?? .pending,
+                    eventDate: booking["eventDate"] as? String ?? "",
+                    eventType: booking["eventType"] as? String ?? "",
+                    eventLocation: booking["eventLocation"] as? String ?? "",
+                    depositPaid: (booking["depositPaid"] as? Bool) ?? false
+                )
+            } catch {
+                continue
+            }
+        }
+        return nil
     }
 
     func updateBooking(id: String, data: [String: Any]) async throws {

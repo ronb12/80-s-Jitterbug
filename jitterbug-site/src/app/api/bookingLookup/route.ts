@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { emptyCors204, jsonWithCors } from "@/lib/server/api-cors";
 import { getDb, bookings } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { getFcmAdmin } from "@/lib/server/fcm-admin";
 
 export const runtime = "nodejs";
@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
         depositPaid: bookings.depositPaid,
       })
       .from(bookings)
-      .where(eq(bookings.bookingRef, bookingRef))
+      // Case-insensitive compare so older rows or mixed casing still match.
+      .where(sql`upper(trim(${bookings.bookingRef})) = ${bookingRef}`)
       .limit(1);
 
     if (row) {
@@ -50,22 +51,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Fallback: legacy Firestore records still created by older app builds.
-    const admin = getFcmAdmin();
-    const fs = admin.firestore();
-    const snap = await fs.collection("bookings").where("bookingRef", "==", bookingRef).limit(1).get();
-    const doc = snap.docs[0];
-    if (!doc) return jsonWithCors({ error: "Booking not found" }, { status: 404 });
-    const data = doc.data() ?? {};
-    return jsonWithCors({
-      booking: {
-        status: String(data.status ?? "pending"),
-        eventDate: String(data.eventDate ?? ""),
-        eventType: String(data.eventType ?? ""),
-        eventLocation: String(data.eventLocation ?? ""),
-        depositPaid: Boolean(data.depositPaid ?? false),
-      },
-    });
+    // Fallback: legacy Firestore records (older app builds). Optional: requires Firebase Admin env on the server.
+    try {
+      const admin = getFcmAdmin();
+      const fs = admin.firestore();
+      const snap = await fs.collection("bookings").where("bookingRef", "==", bookingRef).limit(1).get();
+      const doc = snap.docs[0];
+      if (doc) {
+        const data = doc.data() ?? {};
+        return jsonWithCors({
+          booking: {
+            status: String(data.status ?? "pending"),
+            eventDate: String(data.eventDate ?? ""),
+            eventType: String(data.eventType ?? ""),
+            eventLocation: String(data.eventLocation ?? ""),
+            depositPaid: Boolean(data.depositPaid ?? false),
+          },
+        });
+      }
+    } catch (firestoreErr) {
+      console.error("bookingLookup firestore fallback", firestoreErr);
+    }
+
+    return jsonWithCors({ error: "Booking not found" }, { status: 404 });
   } catch (error) {
     console.error("bookingLookup", error);
     return jsonWithCors({ error: "Lookup unavailable" }, { status: 503 });

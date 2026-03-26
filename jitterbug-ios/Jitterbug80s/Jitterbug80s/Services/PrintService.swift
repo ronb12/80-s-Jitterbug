@@ -40,10 +40,60 @@ enum PrintService {
         guard !pathParts.isEmpty else { return nil }
         let d = pathParts.joined(separator: " ")
         return """
-        <svg viewBox="0 0 320 180" width="320" height="180" xmlns="http://www.w3.org/2000/svg" style="background:#fff;border:1px solid #ddd;border-radius:8px;">
+        <svg viewBox="0 0 320 180" width="280" height="158" xmlns="http://www.w3.org/2000/svg" style="display:block;max-width:100%;height:auto;">
           <path d="\(d)" fill="none" stroke="#111" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         """
+    }
+
+    /// Signature + date row used at the bottom of contract and photo release (one place only — avoids duplicate blank lines).
+    private static func signatureLineFooterHtml(
+        signedName: String?,
+        signedAt: String?,
+        signatureStrokes: [[String: Any]],
+        labelClientSignature: String,
+        labelDate: String
+    ) -> String {
+        let cleanName = signedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let signedDateRaw = signedAt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let signedDate = signedDateRaw.isEmpty ? "" : formatDate(signedDateRaw)
+        let svg = signatureSVG(from: signatureStrokes)
+        let hasSignature = !cleanName.isEmpty || !signedDate.isEmpty || svg != nil
+
+        if !hasSignature {
+            return """
+              <div class="signature-footer">
+                <div class="signature-line">
+                  <span class="sig-label">\(escapeHtml(labelClientSignature))</span>
+                  <span class="sig-slot" aria-hidden="true"></span>
+                  <span class="sig-label">\(escapeHtml(labelDate))</span>
+                  <span class="date-slot" aria-hidden="true"></span>
+                </div>
+              </div>
+            """
+        }
+
+        let sigContent: String
+        if let svg {
+            sigContent = svg
+        } else if !cleanName.isEmpty {
+            sigContent = "<span class=\"sig-typed\">\(escapeHtml(cleanName))</span>"
+        } else {
+            sigContent = "<span class=\"sig-placeholder\">—</span>"
+        }
+
+        let dateContent = signedDate.isEmpty ? "—" : escapeHtml(signedDate)
+
+        return """
+              <div class="signature-footer signed">
+                <div class="signature-line">
+                  <span class="sig-label">\(escapeHtml(labelClientSignature))</span>
+                  <span class="sig-slot">\(sigContent)</span>
+                  <span class="sig-label">\(escapeHtml(labelDate))</span>
+                  <span class="date-slot">\(dateContent)</span>
+                </div>
+              </div>
+            """
     }
 
     /// Generate HTML for the full booking contract. Contact info from settings.
@@ -61,21 +111,13 @@ enum PrintService {
             "<div class=\"section\"><h2>\(escapeHtml(term.title))</h2><p>\(escapeHtml(term.body))</p></div>"
         }.joined(separator: "\n  ")
         let messageBlock = b.message.isEmpty ? "" : "<div class=\"section\"><h2>Message</h2><p>\(escapeHtml(b.message))</p></div>"
-        let signatureBlock: String = {
-            let cleanName = signedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let signedDateRaw = signedAt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let signedDate = signedDateRaw.isEmpty ? "" : formatDate(signedDateRaw)
-            let svg = signatureSVG(from: signatureStrokes)
-            if cleanName.isEmpty && signedDate.isEmpty && svg == nil { return "" }
-            return """
-              <div class="section">
-                <h2>Customer signature</h2>
-                \(cleanName.isEmpty ? "" : "<p><strong>Signed by:</strong> \(escapeHtml(cleanName))</p>")
-                \(signedDate.isEmpty ? "" : "<p><strong>Signed at:</strong> \(escapeHtml(signedDate))</p>")
-                \(svg ?? "")
-              </div>
-            """
-        }()
+        let signatureFooter = signatureLineFooterHtml(
+            signedName: signedName,
+            signedAt: signedAt,
+            signatureStrokes: signatureStrokes,
+            labelClientSignature: "Client signature:",
+            labelDate: "Date:"
+        )
         return """
 <!DOCTYPE html>
 <html>
@@ -92,8 +134,14 @@ enum PrintService {
     .section { margin-top: 24px; }
     .section h2 { font-size: 1rem; margin-bottom: 8px; color: #333; }
     .section p { line-height: 1.5; margin: 0; }
-    .signature { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
-    .signature-line span { display: inline-block; width: 200px; border-bottom: 1px solid #111; margin-right: 16px; }
+    .signature-footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .signature-line { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin-top: 8px; }
+    .signature-line .sig-label { font-weight: 600; color: #333; white-space: nowrap; }
+    .signature-line .sig-slot { min-width: 220px; min-height: 44px; padding: 4px 0 2px; border-bottom: 1px solid #111; display: inline-flex; align-items: flex-end; justify-content: center; flex: 1 1 220px; }
+    .signature-line .date-slot { min-width: 140px; padding-bottom: 2px; border-bottom: 1px solid #111; display: inline-block; text-align: left; }
+    .signature-footer.signed .sig-slot { min-height: 72px; align-items: center; }
+    .sig-typed { font-size: 1.05rem; font-style: italic; }
+    .sig-placeholder { color: #999; }
     .contact-box { margin-top: 24px; padding: 12px; background: #f5f5f5; border-radius: 8px; font-size: 13px; }
     @media print { body { margin: 16px; } }
   </style>
@@ -136,13 +184,10 @@ enum PrintService {
   <h2 style="margin-top: 28px; font-size: 1rem; color: #333;">Terms of This Contract</h2>
   <p class="sub" style="margin-bottom: 12px;">The following terms form part of this contract. By signing below, the client agrees to these terms.</p>
   \(termsHtml)
-  \(signatureBlock)
   <div class="contact-box">
     <strong>Questions?</strong> Contact \(escapeHtml(ownerName)): \(escapeHtml(contactEmail)) · \(escapeHtml(contactPhone))
   </div>
-  <div class="signature">
-    <div class="signature-line">Client signature: <span></span> Date: <span></span></div>
-  </div>
+  \(signatureFooter)
 </body>
 </html>
 """
@@ -162,21 +207,13 @@ enum PrintService {
         let marketingYesNo = booking.map { $0.photoReleaseConsent ? "Yes" : "No" } ?? "__________"
         let minorsYesNo = booking.map { $0.photoReleaseIncludesMinors ? "Yes" : "No" } ?? "__________"
         let refLine = booking.map { "<tr><th>Booking ref</th><td>\(escapeHtml($0.bookingRef))</td></tr>" } ?? ""
-        let signatureBlock: String = {
-            let cleanName = signedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let signedDateRaw = signedAt?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let signedDate = signedDateRaw.isEmpty ? "" : formatDate(signedDateRaw)
-            let svg = signatureSVG(from: signatureStrokes)
-            if cleanName.isEmpty && signedDate.isEmpty && svg == nil { return "" }
-            return """
-              <div class="section">
-                <h2>Customer signature</h2>
-                \(cleanName.isEmpty ? "" : "<p><strong>Signed by:</strong> \(escapeHtml(cleanName))</p>")
-                \(signedDate.isEmpty ? "" : "<p><strong>Signed at:</strong> \(escapeHtml(signedDate))</p>")
-                \(svg ?? "")
-              </div>
-            """
-        }()
+        let signatureFooter = signatureLineFooterHtml(
+            signedName: signedName,
+            signedAt: signedAt,
+            signatureStrokes: signatureStrokes,
+            labelClientSignature: "Signature:",
+            labelDate: "Date:"
+        )
         return """
 <!DOCTYPE html>
 <html>
@@ -192,8 +229,14 @@ enum PrintService {
     th { font-weight: 600; color: #444; width: 120px; }
     .terms { margin: 20px 0; line-height: 1.5; }
     .terms p { margin: 10px 0; }
-    .sig-line { margin-top: 28px; padding-top: 16px; border-top: 1px solid #ccc; }
-    .sig-line span { display: inline-block; width: 200px; border-bottom: 1px solid #111; margin-right: 12px; }
+    .signature-footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #ccc; }
+    .signature-line { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin-top: 8px; }
+    .signature-line .sig-label { font-weight: 600; color: #333; white-space: nowrap; }
+    .signature-line .sig-slot { min-width: 220px; min-height: 44px; padding: 4px 0 2px; border-bottom: 1px solid #111; display: inline-flex; align-items: flex-end; justify-content: center; flex: 1 1 220px; }
+    .signature-line .date-slot { min-width: 140px; padding-bottom: 2px; border-bottom: 1px solid #111; display: inline-block; text-align: left; }
+    .signature-footer.signed .sig-slot { min-height: 72px; align-items: center; }
+    .sig-typed { font-size: 1.05rem; font-style: italic; }
+    .sig-placeholder { color: #999; }
     @media print { body { margin: 16px; } }
   </style>
 </head>
@@ -212,10 +255,7 @@ enum PrintService {
     <p>I understand that 80's Jitterbug will not use images of minors (e.g. children) for marketing unless I have separately granted "minor permission" above or in my booking.</p>
     <p>I warrant that I have authority to agree to the use of likeness of attendees at my event (or have obtained consent where required). I may withdraw this permission later by contacting 80's Jitterbug.</p>
   </div>
-  \(signatureBlock)
-  <div class="sig-line">
-    <p>Signature: <span></span> &nbsp; Date: <span></span></p>
-  </div>
+  \(signatureFooter)
 </body>
 </html>
 """

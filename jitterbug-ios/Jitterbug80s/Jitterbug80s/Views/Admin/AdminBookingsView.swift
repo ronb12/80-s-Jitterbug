@@ -479,11 +479,6 @@ struct AdminBookingDetailView: View {
         signedDocuments.first { $0.type == "photo_release" }
     }
 
-    private func snapshotHasDrawnSignature(_ snapshot: SignedDocumentSnapshot?) -> Bool {
-        guard let html = snapshot?.html.lowercased() else { return false }
-        return html.contains("<svg") && html.contains("<path")
-    }
-
     init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
         self.booking = booking
         self.onDismiss = onDismiss
@@ -575,6 +570,32 @@ struct AdminBookingDetailView: View {
                         Picker("Status", selection: $status) {
                             ForEach(BookingStatus.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) }
                         }
+                    }
+                    Section("Customer messages") {
+                        if messages.isEmpty {
+                            Text("No messages yet.")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(messages) { msg in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(msg.senderRole == "admin" ? "You" : "Customer")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : .secondary)
+                                    Text(msg.text)
+                                        .font(.subheadline)
+                                    Text("\(msg.senderEmail) · \(msg.createdAt)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.vertical, 2)
+                            }
+                        }
+                        TextField("Send a message to customer", text: $messageText, axis: .vertical)
+                            .lineLimit(2...5)
+                        Button(messageSending ? "Sending…" : "Send message") {
+                            sendMessageToCustomer()
+                        }
+                        .disabled(messageSending || messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
                 } else {
                     Section("Details") {
@@ -987,10 +1008,6 @@ struct AdminBookingDetailView: View {
     }
 
     private func printContractDocument() {
-        if snapshotHasDrawnSignature(latestSignedContract), let signed = latestSignedContract {
-            PrintService.printHtml(signed.html)
-            return
-        }
         Task {
             let sig = await BookingService().getBookingSignaturesSnapshot(bookingId: booking.id)
             let html = PrintService.htmlForContract(
@@ -1009,10 +1026,6 @@ struct AdminBookingDetailView: View {
     }
 
     private func printPhotoReleaseDocument() {
-        if snapshotHasDrawnSignature(latestSignedPhotoRelease), let signed = latestSignedPhotoRelease {
-            PrintService.printHtml(signed.html)
-            return
-        }
         Task {
             let sig = await BookingService().getBookingSignaturesSnapshot(bookingId: booking.id)
             let html = PrintService.htmlForPhotoRelease(

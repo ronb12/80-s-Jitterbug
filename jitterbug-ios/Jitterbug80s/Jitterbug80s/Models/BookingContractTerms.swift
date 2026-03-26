@@ -19,11 +19,11 @@ enum BookingContractTerms {
         ),
         BookingContractTerm(
             title: "3. Deposit & Confirmation",
-            body: "A non-refundable deposit (typically 50% of the total, or as stated in your quote) is required to confirm your booking. The deposit secures your date and is applied toward your total. We will send payment details when we confirm your quote. Accepted payment methods (e.g., card, transfer, check) and any fees (e.g., for returned checks) will be communicated at that time. Your booking is confirmed only after we receive the deposit and send you a written confirmation (e.g., by email)."
+            body: "A non-refundable deposit (typically 50% of the total, or as stated in your quote) is required to confirm your booking. The deposit secures your date and is applied toward your total. Deposit payments are processed through Stripe Checkout (secure online card payment) when enabled for your booking. If Stripe Checkout is unavailable, we will provide an alternate payment method in writing. Your booking is confirmed only after we receive the deposit and send you a written confirmation (e.g., by email)."
         ),
         BookingContractTerm(
             title: "4. Balance Due & Late Payment",
-            body: "The remaining balance is due no later than the date we specify in your confirmation (often 7–14 days before the event, or as agreed). We may accept payment on the day of the event by prior arrangement. If the balance is not received by the due date, we reserve the right to treat the booking as cancelled and the deposit as forfeited, and we are not obligated to perform services."
+            body: "The remaining balance is due no later than the date we specify in your confirmation (often 7–14 days before the event, or as agreed). Balance payments may also be processed through Stripe Checkout when enabled. We may accept payment on the day of the event by prior arrangement. If the balance is not received by the due date, we reserve the right to treat the booking as cancelled and the deposit as forfeited, and we are not obligated to perform services."
         ),
         BookingContractTerm(
             title: "5. Cancellation & Rescheduling",

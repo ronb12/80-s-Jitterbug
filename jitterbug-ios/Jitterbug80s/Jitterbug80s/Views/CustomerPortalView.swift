@@ -192,6 +192,9 @@ struct CustomerPortalView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("My bookings")
                         .font(.headline)
+                    Text("Open any booking to use Messages with admin.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 if bookings.isEmpty {
                     Text("No bookings found for this account yet.")
                         .foregroundStyle(.secondary)
