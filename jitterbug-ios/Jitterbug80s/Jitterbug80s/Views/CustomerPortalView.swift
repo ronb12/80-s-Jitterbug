@@ -17,6 +17,12 @@ struct CustomerPortalView: View {
     @State private var bookingsListener: ListenerRegistration?
     @State private var notificationsListener: ListenerRegistration?
     @State private var authListener: AuthStateDidChangeListenerHandle?
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Dark-mode-friendly "secondary" text used in messaging/notification UI.
+    private var portalMessageSecondaryText: Color {
+        Color.primary.opacity(colorScheme == .dark ? 0.8 : 0.55)
+    }
 
     private var fieldBackground: Color {
         #if os(iOS)
@@ -250,7 +256,7 @@ struct CustomerPortalView: View {
                     if notifications.isEmpty {
                         Text("No notifications yet.")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(portalMessageSecondaryText)
                     } else {
                         ForEach(notifications.prefix(8)) { note in
                             Button {
@@ -262,7 +268,7 @@ struct CustomerPortalView: View {
                                         .foregroundStyle(.primary)
                                     Text("\(note.bookingRef) · \(note.createdAt)")
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(portalMessageSecondaryText)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(12)
@@ -404,6 +410,12 @@ private struct CustomerBookingDetailView: View {
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
     @State private var showContractTerms = false
     @State private var showPhotoReleaseTerms = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Dark-mode-friendly "secondary" text used in messaging/notification UI.
+    private var portalMessageSecondaryText: Color {
+        Color.primary.opacity(colorScheme == .dark ? 0.8 : 0.55)
+    }
 
     init(booking: Booking, user: User?) {
         self.booking = booking
@@ -555,18 +567,18 @@ private struct CustomerBookingDetailView: View {
             Section("Messages") {
                 if messages.isEmpty {
                     Text("No messages yet. Send a message to the admin team.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(portalMessageSecondaryText)
                 } else {
                     ForEach(messages) { msg in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(msg.senderRole == "admin" ? "Admin" : "You")
                                 .font(.caption.weight(.semibold))
-                                .foregroundStyle(msg.senderRole == "admin" ? .secondary : portalAccent)
+                                .foregroundStyle(msg.senderRole == "admin" ? portalMessageSecondaryText : portalAccent)
                             Text(msg.text)
                                 .font(.subheadline)
                             Text(msg.createdAt)
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(portalMessageSecondaryText)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, 2)

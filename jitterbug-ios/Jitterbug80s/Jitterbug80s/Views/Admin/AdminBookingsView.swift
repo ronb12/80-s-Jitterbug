@@ -441,6 +441,7 @@ struct AdminAddBookingSheet: View {
 
 struct AdminBookingDetailView: View {
     @Environment(\.openURL) private var openURL
+    @Environment(\.colorScheme) private var colorScheme
     let booking: Booking
     var onDismiss: () -> Void
     var onUpdated: () -> Void
@@ -470,6 +471,11 @@ struct AdminBookingDetailView: View {
     @State private var bookingEvents: [BookingEvent] = []
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
     @State private var emailClientError: String?
+
+    /// Dark-mode-friendly "secondary" text used in messaging UI.
+    private var adminMessageSecondaryText: Color {
+        Color.primary.opacity(colorScheme == .dark ? 0.8 : 0.55)
+    }
 
     private var latestSignedContract: SignedDocumentSnapshot? {
         signedDocuments.first { $0.type == "contract" }
@@ -574,18 +580,18 @@ struct AdminBookingDetailView: View {
                     Section("Customer messages") {
                         if messages.isEmpty {
                             Text("No messages yet.")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(adminMessageSecondaryText)
                         } else {
                             ForEach(messages) { msg in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(msg.senderRole == "admin" ? "You" : "Customer")
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : .secondary)
+                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : adminMessageSecondaryText)
                                     Text(msg.text)
                                         .font(.subheadline)
                                     Text("\(msg.senderEmail) · \(msg.createdAt)")
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(adminMessageSecondaryText)
                                 }
                                 .padding(.vertical, 2)
                             }
@@ -669,18 +675,18 @@ struct AdminBookingDetailView: View {
                     Section("Messages") {
                         if messages.isEmpty {
                             Text("No messages yet.")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(adminMessageSecondaryText)
                         } else {
                             ForEach(messages) { msg in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(msg.senderRole == "admin" ? "You" : "Customer")
                                         .font(.caption.weight(.semibold))
-                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : .secondary)
+                                        .foregroundStyle(msg.senderRole == "admin" ? Color(red: 0.93, green: 0.28, blue: 0.6) : adminMessageSecondaryText)
                                     Text(msg.text)
                                         .font(.subheadline)
                                     Text("\(msg.senderEmail) · \(msg.createdAt)")
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(adminMessageSecondaryText)
                                 }
                                 .padding(.vertical, 2)
                             }
