@@ -14,7 +14,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && requesterEmail() in [
         "sbowie207@gmail.com",
-        "apple@123.com"
+        "ronellbradley@hotmail.com"
       ];
     }
 
@@ -59,6 +59,12 @@ service cloud.firestore {
         && request.resource.data.status == "pending";
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId}/documents/{docId} {
+      allow read: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/bookings/$(bookingId)).data.email == requesterEmail());
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.signedName is string);
+      allow update, delete: if false;
     }
 
     match /settings/{docId} {

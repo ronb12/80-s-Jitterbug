@@ -39,12 +39,17 @@ final class BookingService {
         )
     }
 
+    private static func normalizePublicSiteBase(_ raw: String) -> String {
+        var base = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        while base.hasSuffix("/") { base.removeLast() }
+        return base
+    }
+
     func generateBookingRef() -> String {
         "JB-\(1000 + Int.random(in: 0..<9000))"
     }
 
     func submitBooking(_ form: BookingFormData) async throws -> (ref: String, id: String) {
-        let ref = generateBookingRef()
         let data: [String: Any] = [
             "name": form.name.trimmingCharacters(in: .whitespacesAndNewlines),
             "email": form.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
@@ -58,11 +63,28 @@ final class BookingService {
             "photoReleaseConsent": form.photoReleaseConsent,
             "photoReleaseIncludesMinors": form.photoReleaseIncludesMinors,
             "status": BookingStatus.pending.rawValue,
-            "bookingRef": ref,
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp()
         ]
-        let docRef = try await db.collection(collectionId).addDocument(data: data)
+        // Primary path: website API (Neon). Mirror into Firestore so iOS admin + customer flows stay in sync.
+        if let websiteResult = await submitBookingToPublicAPI(form) {
+            var mirrorData = data
+            mirrorData["bookingRef"] = websiteResult.ref
+            try? await db.collection(collectionId).document(websiteResult.id).setData(mirrorData, merge: true)
+            try? await appendBookingEvent(
+                bookingId: websiteResult.id,
+                type: "booking_created",
+                message: "Booking created by customer form.",
+                actorEmail: form.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            )
+            return websiteResult
+        }
+
+        // Fallback: direct Firestore write (legacy/offline path).
+        let ref = generateBookingRef()
+        var fallbackData = data
+        fallbackData["bookingRef"] = ref
+        let docRef = try await db.collection(collectionId).addDocument(data: fallbackData)
         try? await appendBookingEvent(
             bookingId: docRef.documentID,
             type: "booking_created",
@@ -75,6 +97,43 @@ final class BookingService {
             name: form.name
         )
         return (ref, docRef.documentID)
+    }
+
+    private func submitBookingToPublicAPI(_ form: BookingFormData) async -> (ref: String, id: String)? {
+        let settings = await SettingsService().getSiteSettings()
+        let base = Self.normalizePublicSiteBase(settings.stripePublicBaseUrl)
+        guard let url = URL(string: "\(base)/api/bookings/submit") else { return nil }
+
+        let payload: [String: Any] = [
+            "name": form.name.trimmingCharacters(in: .whitespacesAndNewlines),
+            "email": form.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            "phone": form.phone.trimmingCharacters(in: .whitespacesAndNewlines),
+            "eventType": form.eventType,
+            "eventDate": form.eventDate,
+            "eventLocation": form.eventLocation.trimmingCharacters(in: .whitespacesAndNewlines),
+            "eventAddress": form.eventAddress.trimmingCharacters(in: .whitespacesAndNewlines),
+            "package": form.package,
+            "message": form.message.trimmingCharacters(in: .whitespacesAndNewlines),
+            "photoReleaseConsent": form.photoReleaseConsent,
+            "photoReleaseIncludesMinors": form.photoReleaseIncludesMinors
+        ]
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return nil }
+            guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+            let ref = String(obj["bookingRef"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let id = String(obj["id"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !ref.isEmpty, !id.isEmpty else { return nil }
+            return (ref, id)
+        } catch {
+            return nil
+        }
     }
 
     /// When APIs run on Vercel (no Firestore `onBookingCreatedPush`), ping the secured notify endpoint if configured.
@@ -138,7 +197,7 @@ final class BookingService {
     }
 
     func signCustomerContract(
-        bookingId: String,
+        booking: Booking,
         signerName: String,
         signerEmail: String,
         signerUid: String,
@@ -155,9 +214,10 @@ final class BookingService {
         if !signatureStrokes.isEmpty {
             update["customerContractSignatureStrokes"] = signatureStrokes
         }
-        try await updateBooking(id: bookingId, data: update)
+        try await updateBooking(id: booking.id, data: update)
+        try? await createSignedDocumentSnapshot(booking: booking, type: "contract", signedName: cleanedName)
         try? await appendBookingEvent(
-            bookingId: bookingId,
+            bookingId: booking.id,
             type: "contract_signed",
             message: "Customer signed contract.",
             actorEmail: signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -165,7 +225,7 @@ final class BookingService {
     }
 
     func signCustomerPhotoRelease(
-        bookingId: String,
+        booking: Booking,
         signerName: String,
         signerEmail: String,
         signerUid: String,
@@ -182,13 +242,37 @@ final class BookingService {
         if !signatureStrokes.isEmpty {
             update["customerPhotoReleaseSignatureStrokes"] = signatureStrokes
         }
-        try await updateBooking(id: bookingId, data: update)
+        try await updateBooking(id: booking.id, data: update)
+        try? await createSignedDocumentSnapshot(booking: booking, type: "photo_release", signedName: cleanedName)
         try? await appendBookingEvent(
-            bookingId: bookingId,
+            bookingId: booking.id,
             type: "photo_release_signed",
             message: "Customer signed photo release.",
             actorEmail: signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         )
+    }
+
+    func listSignedDocumentSnapshots(bookingId: String) async -> [SignedDocumentSnapshot] {
+        do {
+            let snap = try await db.collection(collectionId).document(bookingId).collection("documents")
+                .order(by: "createdAt", descending: true)
+                .getDocuments()
+            return snap.documents.compactMap { d in
+                let data = d.data()
+                let html = data["html"] as? String ?? ""
+                guard !html.isEmpty else { return nil }
+                return SignedDocumentSnapshot(
+                    id: d.documentID,
+                    type: data["type"] as? String ?? "document",
+                    fileName: data["fileName"] as? String ?? "signed-document",
+                    html: html,
+                    signedName: data["signedName"] as? String ?? "",
+                    createdAt: Self.isoString(from: data["createdAt"])
+                )
+            }
+        } catch {
+            return []
+        }
     }
 
     func addCustomerChangeRequest(bookingId: String, requestText: String, requesterEmail: String) async throws {
@@ -271,6 +355,9 @@ final class BookingService {
     func getBookingStatusByRef(_ ref: String) async -> BookingStatusPublic? {
         let trimmed = ref.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !trimmed.isEmpty else { return nil }
+        if let fromApi = await getBookingStatusByRefFromPublicAPI(trimmed) {
+            return fromApi
+        }
         do {
             let snap = try await db.collection(collectionId)
                 .whereField("bookingRef", isEqualTo: trimmed)
@@ -285,6 +372,38 @@ final class BookingService {
                 eventType: d["eventType"] as? String ?? "",
                 eventLocation: d["eventLocation"] as? String ?? "",
                 depositPaid: (d["depositPaid"] as? Bool) ?? false
+            )
+        } catch {
+            return nil
+        }
+    }
+
+    private func getBookingStatusByRefFromPublicAPI(_ normalizedRef: String) async -> BookingStatusPublic? {
+        let settings = await SettingsService().getSiteSettings()
+        let base = Self.normalizePublicSiteBase(settings.stripePublicBaseUrl)
+        guard let url = URL(string: "\(base)/api/bookingLookup") else { return nil }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["bookingRef": normalizedRef])
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse else { return nil }
+            if http.statusCode == 404 { return nil }
+            guard (200...299).contains(http.statusCode) else { return nil }
+            guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let booking = obj["booking"] as? [String: Any]
+            else { return nil }
+
+            let statusRaw = (booking["status"] as? String ?? "pending").lowercased()
+            return BookingStatusPublic(
+                status: BookingStatus(rawValue: statusRaw) ?? .pending,
+                eventDate: booking["eventDate"] as? String ?? "",
+                eventType: booking["eventType"] as? String ?? "",
+                eventLocation: booking["eventLocation"] as? String ?? "",
+                depositPaid: (booking["depositPaid"] as? Bool) ?? false
             )
         } catch {
             return nil
@@ -309,5 +428,35 @@ final class BookingService {
             "createdAt": FieldValue.serverTimestamp()
         ]
         _ = try await db.collection(collectionId).document(bookingId).collection("events").addDocument(data: payload)
+    }
+
+    private func createSignedDocumentSnapshot(booking: Booking, type: String, signedName: String) async throws {
+        let settings = await SettingsService().getSiteSettings()
+        let html: String
+        let fileName: String
+        if type == "photo_release" {
+            html = PrintService.htmlForPhotoRelease(
+                booking: booking,
+                contactEmail: settings.contactEmail,
+                contactPhone: settings.contactPhone
+            )
+            fileName = "signed-photo-release-\(booking.bookingRef)"
+        } else {
+            html = PrintService.htmlForContract(
+                booking: booking,
+                ownerName: settings.ownerName,
+                contactEmail: settings.contactEmail,
+                contactPhone: settings.contactPhone
+            )
+            fileName = "signed-contract-\(booking.bookingRef)"
+        }
+        let payload: [String: Any] = [
+            "type": type,
+            "fileName": fileName,
+            "html": html,
+            "signedName": signedName,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        _ = try await db.collection(collectionId).document(booking.id).collection("documents").addDocument(data: payload)
     }
 }

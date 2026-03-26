@@ -29,7 +29,7 @@ struct MainTabView: View {
                 .tabItem { Label("Book", systemImage: "calendar.badge.plus") }
                 .tag(3)
             CustomerPortalView()
-                .tabItem { Label("Portal", systemImage: "person.crop.circle.fill") }
+                .tabItem { Label("Customer Portal", systemImage: "person.crop.circle.fill") }
                 .tag(4)
             MoreView(onOpenAdmin: onOpenAdmin, isAdmin: isAdmin, onSelectTab: { selectedTab = $0 })
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }

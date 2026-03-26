@@ -5,11 +5,14 @@ import FirebaseFirestore
 
 enum AuthServiceError: LocalizedError {
     case firebaseNotConfigured
+    case unauthorizedAdmin
 
     var errorDescription: String? {
         switch self {
         case .firebaseNotConfigured:
             return "Firebase isn’t configured. Add a valid GoogleService-Info.plist (with a real API key) to the app target."
+        case .unauthorizedAdmin:
+            return "This account is not authorized for admin access."
         }
     }
 }
@@ -20,7 +23,7 @@ final class AuthService: ObservableObject {
     @Published var isAdmin: Bool = false
     private let adminEmailAllowlist: Set<String> = [
         "sbowie207@gmail.com",
-        "apple@123.com"
+        "ronellbradley@hotmail.com"
     ]
 
     /// "Apple" when logged-in email contains "apple" (e.g. apple@123.com); nil otherwise. Use for admin welcome.
@@ -61,12 +64,23 @@ final class AuthService: ObservableObject {
         guard FirebaseManager.isConfigured else {
             throw AuthServiceError.firebaseNotConfigured
         }
-        _ = try await FirebaseManager.shared.auth.signIn(
+        let result = try await FirebaseManager.shared.auth.signIn(
             withEmail: email.trimmingCharacters(in: .whitespacesAndNewlines),
             password: password
         )
+        let allowed = isAdminUser(result.user)
+        if !allowed {
+            // Prevent non-admin authenticated users from opening admin UI.
+            try? FirebaseManager.shared.auth.signOut()
+            await MainActor.run {
+                self.currentUser = nil
+                self.isAdmin = false
+            }
+            throw AuthServiceError.unauthorizedAdmin
+        }
         await MainActor.run {
-            self.isAdmin = self.isAdminUser(self.currentUser)
+            self.currentUser = result.user
+            self.isAdmin = true
         }
         if isAdmin {
             // Auth listener also triggers admin FCM registration; explicit call covers edge cases.

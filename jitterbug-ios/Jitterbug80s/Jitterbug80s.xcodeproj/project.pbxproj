@@ -24,6 +24,9 @@
 		47AA80222F631A5D00DE63DF /* AdminLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80232F631A5D00DE63DF /* AdminLoginView.swift */; };
 		47AA80242F631A5D00DE63DF /* AdminTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80252F631A5D00DE63DF /* AdminTabView.swift */; };
 		47AA80262F631A5D00DE63DF /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80272F631A5D00DE63DF /* Booking.swift */; };
+		47EE10112F631A5D00DE63DF /* BookingEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10012F631A5D00DE63DF /* BookingEvent.swift */; };
+		47EE10122F631A5D00DE63DF /* SignedDocumentSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10022F631A5D00DE63DF /* SignedDocumentSnapshot.swift */; };
+		47EE10132F631A5D00DE63DF /* CustomerPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10032F631A5D00DE63DF /* CustomerPortalView.swift */; };
 		47AA80282F631A5D00DE63DF /* GalleryPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80292F631A5D00DE63DF /* GalleryPhoto.swift */; };
 		47AA802A2F631A5D00DE63DF /* PackagePrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802B2F631A5D00DE63DF /* PackagePrice.swift */; };
 		47AA802C2F631A5D00DE63DF /* AdminBookingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802D2F631A5D00DE63DF /* AdminBookingsView.swift */; };
@@ -74,6 +77,9 @@
 		47BB7F0D2F631A5D00DE63DF /* AdminLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80232F631A5D00DE63DF /* AdminLoginView.swift */; };
 		47BB7F0E2F631A5D00DE63DF /* AdminTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80252F631A5D00DE63DF /* AdminTabView.swift */; };
 		47BB7F0F2F631A5D00DE63DF /* Booking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80272F631A5D00DE63DF /* Booking.swift */; };
+		47EE10212F631A5D00DE63DF /* BookingEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10012F631A5D00DE63DF /* BookingEvent.swift */; };
+		47EE10222F631A5D00DE63DF /* SignedDocumentSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10022F631A5D00DE63DF /* SignedDocumentSnapshot.swift */; };
+		47EE10232F631A5D00DE63DF /* CustomerPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47EE10032F631A5D00DE63DF /* CustomerPortalView.swift */; };
 		47BB7F102F631A5D00DE63DF /* BookingContractTerms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA806F2F631A5D00DE63DF /* BookingContractTerms.swift */; };
 		47BB7F112F631A5D00DE63DF /* GalleryPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA80292F631A5D00DE63DF /* GalleryPhoto.swift */; };
 		47BB7F122F631A5D00DE63DF /* PackagePrice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AA802B2F631A5D00DE63DF /* PackagePrice.swift */; };
@@ -139,6 +145,9 @@
 		47AA80232F631A5D00DE63DF /* AdminLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminLoginView.swift; sourceTree = "<group>"; };
 		47AA80252F631A5D00DE63DF /* AdminTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminTabView.swift; sourceTree = "<group>"; };
 		47AA80272F631A5D00DE63DF /* Booking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Booking.swift; sourceTree = "<group>"; };
+		47EE10012F631A5D00DE63DF /* BookingEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookingEvent.swift; sourceTree = "<group>"; };
+		47EE10022F631A5D00DE63DF /* SignedDocumentSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignedDocumentSnapshot.swift; sourceTree = "<group>"; };
+		47EE10032F631A5D00DE63DF /* CustomerPortalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerPortalView.swift; sourceTree = "<group>"; };
 		47AA80292F631A5D00DE63DF /* GalleryPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryPhoto.swift; sourceTree = "<group>"; };
 		47AA802B2F631A5D00DE63DF /* PackagePrice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackagePrice.swift; sourceTree = "<group>"; };
 		47AA802D2F631A5D00DE63DF /* AdminBookingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminBookingsView.swift; sourceTree = "<group>"; };
@@ -283,9 +292,11 @@
 			isa = PBXGroup;
 			children = (
 				47AA80272F631A5D00DE63DF /* Booking.swift */,
+				47EE10012F631A5D00DE63DF /* BookingEvent.swift */,
 				47AA806F2F631A5D00DE63DF /* BookingContractTerms.swift */,
 				47AA80292F631A5D00DE63DF /* GalleryPhoto.swift */,
 				47AA802B2F631A5D00DE63DF /* PackagePrice.swift */,
+				47EE10022F631A5D00DE63DF /* SignedDocumentSnapshot.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -322,6 +333,7 @@
 				47AA80412F631A5D00DE63DF /* MoreView.swift */,
 				47AA80432F631A5D00DE63DF /* PackagesView.swift */,
 				47AA80492F631A5D00DE63DF /* LandingView.swift */,
+				47EE10032F631A5D00DE63DF /* CustomerPortalView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -549,6 +561,8 @@
 				47AA80222F631A5D00DE63DF /* AdminLoginView.swift in Sources */,
 				47AA80242F631A5D00DE63DF /* AdminTabView.swift in Sources */,
 				47AA80262F631A5D00DE63DF /* Booking.swift in Sources */,
+				47EE10112F631A5D00DE63DF /* BookingEvent.swift in Sources */,
+				47EE10122F631A5D00DE63DF /* SignedDocumentSnapshot.swift in Sources */,
 				47AA806E2F631A5D00DE63DF /* BookingContractTerms.swift in Sources */,
 				47AA80282F631A5D00DE63DF /* GalleryPhoto.swift in Sources */,
 				47AA802A2F631A5D00DE63DF /* PackagePrice.swift in Sources */,
@@ -566,6 +580,7 @@
 				47AA80402F631A5D00DE63DF /* MoreView.swift in Sources */,
 				47AA80422F631A5D00DE63DF /* PackagesView.swift in Sources */,
 				47AA80482F631A5D00DE63DF /* LandingView.swift in Sources */,
+				47EE10132F631A5D00DE63DF /* CustomerPortalView.swift in Sources */,
 				47AA80702F631A5D00DE63DF /* PrintService.swift in Sources */,
 				47AA804A2F631A5D00DE63DF /* SettingsService.swift in Sources */,
 				47AA80782F631A5D00DE63DF /* StripeCheckoutService.swift in Sources */,
@@ -609,6 +624,8 @@
 				47BB7F0D2F631A5D00DE63DF /* AdminLoginView.swift in Sources */,
 				47BB7F0E2F631A5D00DE63DF /* AdminTabView.swift in Sources */,
 				47BB7F0F2F631A5D00DE63DF /* Booking.swift in Sources */,
+				47EE10212F631A5D00DE63DF /* BookingEvent.swift in Sources */,
+				47EE10222F631A5D00DE63DF /* SignedDocumentSnapshot.swift in Sources */,
 				47BB7F102F631A5D00DE63DF /* BookingContractTerms.swift in Sources */,
 				47BB7F112F631A5D00DE63DF /* GalleryPhoto.swift in Sources */,
 				47BB7F122F631A5D00DE63DF /* PackagePrice.swift in Sources */,
@@ -626,6 +643,7 @@
 				47BB7F1D2F631A5D00DE63DF /* MoreView.swift in Sources */,
 				47BB7F1E2F631A5D00DE63DF /* PackagesView.swift in Sources */,
 				47BB7F1F2F631A5D00DE63DF /* LandingView.swift in Sources */,
+				47EE10232F631A5D00DE63DF /* CustomerPortalView.swift in Sources */,
 				47BB7F202F631A5D00DE63DF /* PrintService.swift in Sources */,
 				47BB7F212F631A5D00DE63DF /* SettingsService.swift in Sources */,
 				47BB7F222F631A5D00DE63DF /* StripeCheckoutService.swift in Sources */,

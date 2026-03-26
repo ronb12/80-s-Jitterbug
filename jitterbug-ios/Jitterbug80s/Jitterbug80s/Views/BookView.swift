@@ -9,6 +9,8 @@ struct BookView: View {
     @State private var error: String?
     @State private var successRef: String?
     @State private var successId: String?
+    @State private var termsExpanded = false
+    @State private var hasExpandedTerms = false
     /// Opt-in: register this device for a push when the deposit is paid (requires notification permission).
     @State private var notifyWhenDepositPaid = false
 
@@ -31,6 +33,7 @@ struct BookView: View {
             && !form.eventLocation.trimmingCharacters(in: .whitespaces).isEmpty
             && !form.eventAddress.trimmingCharacters(in: .whitespaces).isEmpty
             && !form.package.isEmpty
+            && hasExpandedTerms
             && form.photoReleaseConsent
     }
 
@@ -39,6 +42,9 @@ struct BookView: View {
             mainBookingContent
                 .navigationTitle("Book Your Booth")
                 .task {
+                    if form.eventDate.isEmpty {
+                        form.eventDate = Self.stringFromDate(Date())
+                    }
                     async let types: () = loadEventTypes()
                     async let pkgs: () = loadPackages()
                     _ = await (types, pkgs)
@@ -104,6 +110,31 @@ struct BookView: View {
                     .lineLimit(4)
                 #endif
             }
+            Section("Booking terms & photo release") {
+                DisclosureGroup("View booking terms and photo release", isExpanded: $termsExpanded) {
+                    Text("Please review these terms before submitting your booking request.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+
+                    ForEach(Array(BookingContractTerms.all.enumerated()), id: \.offset) { _, term in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(term.title)
+                                .font(.subheadline.weight(.semibold))
+                            Text(term.body)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+
+                if !hasExpandedTerms {
+                    Text("Open this section to review terms before submitting.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Section {
                 Toggle("I agree to the booking terms and photo release", isOn: $form.photoReleaseConsent)
                 if form.photoReleaseConsent {
@@ -136,6 +167,11 @@ struct BookView: View {
         .controlSize(.small)
         #endif
         .jitterbugMacInsetLeadingScrollableForm()
+        .onChange(of: termsExpanded) { _, expanded in
+            if expanded {
+                hasExpandedTerms = true
+            }
+        }
     }
 
     private func loadEventTypes() async {

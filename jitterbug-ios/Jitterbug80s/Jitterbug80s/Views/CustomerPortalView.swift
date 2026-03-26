@@ -226,6 +226,7 @@ private struct CustomerBookingDetailView: View {
     @State private var changeRequestText = ""
     @State private var changeRequestSaving = false
     @State private var bookingEvents: [BookingEvent] = []
+    @State private var signedDocuments: [SignedDocumentSnapshot] = []
 
     init(booking: Booking, user: User?) {
         self.booking = booking
@@ -360,6 +361,26 @@ private struct CustomerBookingDetailView: View {
                     }
                 }
             }
+            if !signedDocuments.isEmpty {
+                Section("Signed documents") {
+                    ForEach(signedDocuments) { doc in
+                        Button {
+                            PrintService.printHtml(doc.html)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(doc.fileName)
+                                    .font(.subheadline.weight(.semibold))
+                                Text("\(doc.type) · \(doc.createdAt)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    Text("Opening a signed document uses system print. Choose Save as PDF to download.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         #if os(macOS)
         .controlSize(.small)
@@ -376,7 +397,11 @@ private struct CustomerBookingDetailView: View {
             }
             Task {
                 let events = await BookingService().listBookingEvents(bookingId: booking.id)
-                await MainActor.run { bookingEvents = events }
+                let docs = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
+                await MainActor.run {
+                    bookingEvents = events
+                    signedDocuments = docs
+                }
             }
             Task {
                 let s = await SettingsService().getSiteSettings()
@@ -458,10 +483,12 @@ private struct CustomerBookingDetailView: View {
                     requesterEmail: email
                 )
                 let events = await BookingService().listBookingEvents(bookingId: booking.id)
+                let docs = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
                 await MainActor.run {
                     changeRequestSaving = false
                     changeRequestText = ""
                     bookingEvents = events
+                    signedDocuments = docs
                 }
             } catch {
                 await MainActor.run {
@@ -556,7 +583,7 @@ private struct CustomerPhotoReleaseSignSheet: View {
         Task {
             do {
                 try await BookingService().signCustomerPhotoRelease(
-                    bookingId: booking.id,
+                    booking: booking,
                     signerName: cleanedName,
                     signerEmail: user.email ?? "",
                     signerUid: user.uid,
@@ -659,7 +686,7 @@ private struct CustomerContractSignSheet: View {
         Task {
             do {
                 try await BookingService().signCustomerContract(
-                    bookingId: booking.id,
+                    booking: booking,
                     signerName: cleanedName,
                     signerEmail: user.email ?? "",
                     signerUid: user.uid,

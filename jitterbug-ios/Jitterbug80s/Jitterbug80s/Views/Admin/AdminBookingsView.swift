@@ -446,6 +446,7 @@ struct AdminBookingDetailView: View {
     @State private var stripePayError: String?
     @State private var changeRequests: [BookingChangeRequest] = []
     @State private var bookingEvents: [BookingEvent] = []
+    @State private var signedDocuments: [SignedDocumentSnapshot] = []
 
     init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
         self.booking = booking
@@ -645,6 +646,26 @@ struct AdminBookingDetailView: View {
                             }
                         }
                     }
+                    if !signedDocuments.isEmpty {
+                        Section("Signed documents") {
+                            ForEach(signedDocuments) { doc in
+                                Button {
+                                    PrintService.printHtml(doc.html)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(doc.fileName)
+                                            .font(.subheadline.weight(.semibold))
+                                        Text("\(doc.type) · \(doc.createdAt)")
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            Text("Opening a signed document uses system print. Choose Save as PDF to download.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 Section {
                     Link("Email client", destination: URL(string: "mailto:\(booking.email)")!)
@@ -730,6 +751,7 @@ struct AdminBookingDetailView: View {
                 stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
                 changeRequests = await BookingService().listChangeRequests(bookingId: booking.id)
                 bookingEvents = await BookingService().listBookingEvents(bookingId: booking.id)
+                signedDocuments = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
             }
         }
         .jitterbugMacNavigationRootFill()
@@ -828,9 +850,11 @@ struct AdminBookingDetailView: View {
             try? await BookingService().resolveChangeRequest(bookingId: booking.id, requestId: requestId, status: status)
             let nextRequests = await BookingService().listChangeRequests(bookingId: booking.id)
             let nextEvents = await BookingService().listBookingEvents(bookingId: booking.id)
+            let nextDocs = await BookingService().listSignedDocumentSnapshots(bookingId: booking.id)
             await MainActor.run {
                 changeRequests = nextRequests
                 bookingEvents = nextEvents
+                signedDocuments = nextDocs
                 onUpdated()
             }
         }

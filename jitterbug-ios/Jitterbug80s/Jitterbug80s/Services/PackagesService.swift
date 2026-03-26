@@ -16,7 +16,7 @@ final class PackagesService {
               let list = data["packages"] as? [[String: Any]] else {
             return Self.defaultPackages
         }
-        let parsed = list.compactMap { p in
+        let parsed: [PackagePrice] = list.compactMap { p -> PackagePrice? in
             let id = (p["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             guard !id.isEmpty else { return nil }
             let features = (p["features"] as? [String])?.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } ?? []
