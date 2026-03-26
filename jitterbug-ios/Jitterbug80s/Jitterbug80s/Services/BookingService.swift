@@ -209,7 +209,7 @@ final class BookingService {
         signerName: String,
         signerEmail: String,
         signerUid: String,
-        signatureStrokes: [[[Double]]]
+        signatureStrokes: [[String: Any]]
     ) async throws {
         let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedName.isEmpty else { return }
@@ -237,7 +237,7 @@ final class BookingService {
         signerName: String,
         signerEmail: String,
         signerUid: String,
-        signatureStrokes: [[[Double]]]
+        signatureStrokes: [[String: Any]]
     ) async throws {
         let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleanedName.isEmpty else { return }

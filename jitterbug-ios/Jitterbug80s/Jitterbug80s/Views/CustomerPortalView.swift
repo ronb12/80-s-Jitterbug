@@ -555,6 +555,16 @@ private struct CustomerPhotoReleaseSignSheet: View {
         !strokes.isEmpty || !currentStroke.isEmpty
     }
 
+    /// Firestore does not allow nested arrays; store strokes as an array of maps.
+    private func firestoreSignaturePayload(from allStrokes: [[CGPoint]]) -> [[String: Any]] {
+        allStrokes.enumerated().map { idx, stroke in
+            [
+                "index": idx,
+                "points": stroke.map { ["x": Double($0.x), "y": Double($0.y)] }
+            ]
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -616,9 +626,7 @@ private struct CustomerPhotoReleaseSignSheet: View {
         }
 
         saving = true
-        let firestoreStrokes: [[[Double]]] = allStrokes.map { stroke in
-            stroke.map { [Double($0.x), Double($0.y)] }
-        }
+        let firestoreStrokes = firestoreSignaturePayload(from: allStrokes)
 
         Task {
             do {
@@ -656,6 +664,16 @@ private struct CustomerContractSignSheet: View {
 
     private var hasSignature: Bool {
         !strokes.isEmpty || !currentStroke.isEmpty
+    }
+
+    /// Firestore does not allow nested arrays; store strokes as an array of maps.
+    private func firestoreSignaturePayload(from allStrokes: [[CGPoint]]) -> [[String: Any]] {
+        allStrokes.enumerated().map { idx, stroke in
+            [
+                "index": idx,
+                "points": stroke.map { ["x": Double($0.x), "y": Double($0.y)] }
+            ]
+        }
     }
 
     var body: some View {
@@ -719,9 +737,7 @@ private struct CustomerContractSignSheet: View {
         }
 
         saving = true
-        let firestoreStrokes: [[[Double]]] = allStrokes.map { stroke in
-            stroke.map { [Double($0.x), Double($0.y)] }
-        }
+        let firestoreStrokes = firestoreSignaturePayload(from: allStrokes)
 
         Task {
             do {
