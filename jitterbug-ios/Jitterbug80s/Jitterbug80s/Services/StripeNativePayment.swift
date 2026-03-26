@@ -27,6 +27,11 @@ enum StripeNativePaymentError: LocalizedError {
 }
 
 enum StripeNativePayment {
+    enum PaymentKind: String {
+        case deposit
+        case balance
+    }
+
     /// - Parameters:
     ///   - publishableKey: `pk_test_…` or `pk_live_…` from Admin → Settings (must match your Stripe secret key mode on the server).
     /// - Returns: `true` if the customer completed payment, `false` if they cancelled.
@@ -36,11 +41,41 @@ enum StripeNativePayment {
         publicSiteBaseURL: String,
         publishableKey: String
     ) async throws -> Bool {
+        try await presentPaymentSheet(
+            bookingId: bookingId,
+            publicSiteBaseURL: publicSiteBaseURL,
+            publishableKey: publishableKey,
+            paymentKind: .deposit
+        )
+    }
+
+    @MainActor
+    static func presentBalanceSheet(
+        bookingId: String,
+        publicSiteBaseURL: String,
+        publishableKey: String
+    ) async throws -> Bool {
+        try await presentPaymentSheet(
+            bookingId: bookingId,
+            publicSiteBaseURL: publicSiteBaseURL,
+            publishableKey: publishableKey,
+            paymentKind: .balance
+        )
+    }
+
+    @MainActor
+    private static func presentPaymentSheet(
+        bookingId: String,
+        publicSiteBaseURL: String,
+        publishableKey: String,
+        paymentKind: PaymentKind
+    ) async throws -> Bool {
 #if os(iOS)
         return try await presentDepositSheetIOS(
             bookingId: bookingId,
             publicSiteBaseURL: publicSiteBaseURL,
-            publishableKey: publishableKey
+            publishableKey: publishableKey,
+            paymentKind: paymentKind
         )
 #else
         throw StripeNativePaymentError.unavailableOnNativeMac
@@ -58,7 +93,8 @@ extension StripeNativePayment {
     fileprivate static func presentDepositSheetIOS(
         bookingId: String,
         publicSiteBaseURL: String,
-        publishableKey: String
+        publishableKey: String,
+        paymentKind: PaymentKind
     ) async throws -> Bool {
         let pk = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pk.isEmpty else { throw StripeNativePaymentError.missingPublishableKey }
@@ -71,7 +107,10 @@ extension StripeNativePayment {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["bookingId": bookingId])
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "bookingId": bookingId,
+            "paymentKind": paymentKind.rawValue
+        ])
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw StripeNativePaymentError.invalidResponse }

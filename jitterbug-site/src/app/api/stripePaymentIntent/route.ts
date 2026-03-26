@@ -25,8 +25,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = (await request.json()) as { bookingId?: string };
+    const body = (await request.json()) as { bookingId?: string; paymentKind?: string };
     const bookingId = String(body?.bookingId ?? "").trim();
+    const paymentKind = String(body?.paymentKind ?? "deposit").trim().toLowerCase();
+    const isBalance = paymentKind === "balance";
     if (!bookingId) {
       return jsonWithCors({ error: "bookingId required" }, { status: 400 });
     }
@@ -35,9 +37,15 @@ export async function POST(request: NextRequest) {
     if (!b) {
       return jsonWithCors({ error: "Booking not found" }, { status: 404 });
     }
-    if (b.depositPaid === true) {
+    if (!isBalance && b.depositPaid === true) {
       return jsonWithCors(
         { error: "Deposit already recorded for this booking." },
+        { status: 400 }
+      );
+    }
+    if (isBalance && b.balancePaid === true) {
+      return jsonWithCors(
+        { error: "Balance already recorded for this booking." },
         { status: 400 }
       );
     }
@@ -49,17 +57,33 @@ export async function POST(request: NextRequest) {
     if (fullCents != null && fullCents > 0) {
       depositCents = Math.min(depositCents, fullCents);
     }
+    if (isBalance && (b.depositPaid !== true)) {
+      return jsonWithCors(
+        { error: "Deposit must be paid before paying the remaining balance." },
+        { status: 400 }
+      );
+    }
+    const amountCents = isBalance
+      ? Math.max(0, (fullCents ?? 0) - depositCents)
+      : depositCents;
+    if (amountCents <= 0) {
+      return jsonWithCors(
+        { error: isBalance ? "No remaining balance due for this booking." : "Invalid deposit amount." },
+        { status: 400 }
+      );
+    }
 
     const stripe = new Stripe(secret);
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: depositCents,
+      amount: amountCents,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
       receipt_email: String(b.email ?? "").trim() || undefined,
-      description: `Photo booth deposit — ${bookingRefCode || bookingId}`,
+      description: `Photo booth ${isBalance ? "balance" : "deposit"} — ${bookingRefCode || bookingId}`,
       metadata: {
         bookingId,
         bookingRef: bookingRefCode,
+        paymentKind: isBalance ? "balance" : "deposit",
       },
     });
 

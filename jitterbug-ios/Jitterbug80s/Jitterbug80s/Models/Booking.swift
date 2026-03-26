@@ -53,4 +53,8 @@ struct Booking: Identifiable, Hashable {
     var updatedAt: String
     var depositPaid: Bool?
     var balancePaid: Bool?
+    var customerContractSignedAt: String?
+    var customerContractSignedName: String?
+    var customerPhotoReleaseSignedAt: String?
+    var customerPhotoReleaseSignedName: String?
 }

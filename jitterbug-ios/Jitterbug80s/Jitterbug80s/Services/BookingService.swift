@@ -11,10 +11,9 @@ final class BookingService {
         return ""
     }
 
-    private static func parseBooking(_ doc: QueryDocumentSnapshot) -> Booking {
-        let d = doc.data()
+    private static func parseBooking(id: String, data d: [String: Any]) -> Booking {
         return Booking(
-            id: doc.documentID,
+            id: id,
             name: d["name"] as? String ?? "",
             email: d["email"] as? String ?? "",
             phone: d["phone"] as? String ?? "",
@@ -31,7 +30,11 @@ final class BookingService {
             createdAt: Self.isoString(from: d["createdAt"]),
             updatedAt: Self.isoString(from: d["updatedAt"]),
             depositPaid: d["depositPaid"] as? Bool,
-            balancePaid: d["balancePaid"] as? Bool
+            balancePaid: d["balancePaid"] as? Bool,
+            customerContractSignedAt: Self.isoString(from: d["customerContractSignedAt"]),
+            customerContractSignedName: (d["customerContractSignedName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+            customerPhotoReleaseSignedAt: Self.isoString(from: d["customerPhotoReleaseSignedAt"]),
+            customerPhotoReleaseSignedName: (d["customerPhotoReleaseSignedName"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
 
@@ -100,7 +103,7 @@ final class BookingService {
         let snap = try await db.collection(collectionId)
             .order(by: "createdAt", descending: true)
             .getDocuments()
-        return snap.documents.map(Self.parseBooking)
+        return snap.documents.map { Self.parseBooking(id: $0.documentID, data: $0.data()) }
     }
 
     @discardableResult
@@ -110,10 +113,63 @@ final class BookingService {
             .whereField("email", isEqualTo: normalized)
             .addSnapshotListener { snap, _ in
                 let list = (snap?.documents ?? [])
-                    .map(Self.parseBooking)
+                    .map { Self.parseBooking(id: $0.documentID, data: $0.data()) }
                     .sorted { $0.eventDate > $1.eventDate }
                 onChange(list)
             }
+    }
+
+    @discardableResult
+    func observeBooking(id: String, onChange: @escaping (Booking?) -> Void) -> ListenerRegistration {
+        db.collection(collectionId).document(id).addSnapshotListener { snap, _ in
+            guard let snap, snap.exists, let data = snap.data() else {
+                onChange(nil)
+                return
+            }
+            onChange(Self.parseBooking(id: snap.documentID, data: data))
+        }
+    }
+
+    func signCustomerContract(
+        bookingId: String,
+        signerName: String,
+        signerEmail: String,
+        signerUid: String,
+        signatureStrokes: [[[Double]]]
+    ) async throws {
+        let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedName.isEmpty else { return }
+        var update: [String: Any] = [
+            "customerContractSignedAt": FieldValue.serverTimestamp(),
+            "customerContractSignedName": cleanedName,
+            "customerContractSignedByEmail": signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            "customerContractSignedByUid": signerUid
+        ]
+        if !signatureStrokes.isEmpty {
+            update["customerContractSignatureStrokes"] = signatureStrokes
+        }
+        try await updateBooking(id: bookingId, data: update)
+    }
+
+    func signCustomerPhotoRelease(
+        bookingId: String,
+        signerName: String,
+        signerEmail: String,
+        signerUid: String,
+        signatureStrokes: [[[Double]]]
+    ) async throws {
+        let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedName.isEmpty else { return }
+        var update: [String: Any] = [
+            "customerPhotoReleaseSignedAt": FieldValue.serverTimestamp(),
+            "customerPhotoReleaseSignedName": cleanedName,
+            "customerPhotoReleaseSignedByEmail": signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            "customerPhotoReleaseSignedByUid": signerUid
+        ]
+        if !signatureStrokes.isEmpty {
+            update["customerPhotoReleaseSignatureStrokes"] = signatureStrokes
+        }
+        try await updateBooking(id: bookingId, data: update)
     }
 
     func getBookingStatusByRef(_ ref: String) async -> BookingStatusPublic? {

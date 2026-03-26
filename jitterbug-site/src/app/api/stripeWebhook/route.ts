@@ -50,15 +50,19 @@ export async function POST(request: Request) {
     const pi = event.data.object as Stripe.PaymentIntent;
     const bookingId = pi.metadata?.bookingId;
     if (bookingId && pi.status === "succeeded") {
+      const paymentKind = String(pi.metadata?.paymentKind ?? "deposit").toLowerCase();
+      const isBalance = paymentKind === "balance";
       await updateBookingNeon(bookingId, {
-        depositPaid: true,
+        ...(isBalance ? { balancePaid: true } : { depositPaid: true }),
         stripePaymentIntentId: pi.id,
       });
       const refCode = String(pi.metadata?.bookingRef ?? bookingId);
-      try {
-        await notifyDepositPaid(bookingId, refCode);
-      } catch (e) {
-        console.error("notifyDepositPaid (pi)", e);
+      if (!isBalance) {
+        try {
+          await notifyDepositPaid(bookingId, refCode);
+        } catch (e) {
+          console.error("notifyDepositPaid (pi)", e);
+        }
       }
     }
   }

@@ -55,7 +55,11 @@ private let sampleBooking = Booking(
     createdAt: ISO8601DateFormatter().string(from: Date()),
     updatedAt: ISO8601DateFormatter().string(from: Date()),
     depositPaid: nil,
-    balancePaid: nil
+    balancePaid: nil,
+    customerContractSignedAt: nil,
+    customerContractSignedName: nil,
+    customerPhotoReleaseSignedAt: nil,
+    customerPhotoReleaseSignedName: nil
 )
 
 struct AdminDocumentsView: View {

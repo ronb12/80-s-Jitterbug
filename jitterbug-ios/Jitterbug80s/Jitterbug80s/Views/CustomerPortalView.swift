@@ -106,7 +106,7 @@ struct CustomerPortalView: View {
                 } else {
                     ForEach(bookings) { booking in
                         NavigationLink {
-                            CustomerBookingDetailView(booking: booking)
+                            CustomerBookingDetailView(booking: booking, user: user)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(booking.eventType.isEmpty ? "Booking" : booking.eventType)
@@ -213,25 +213,124 @@ struct CustomerPortalView: View {
 
 private struct CustomerBookingDetailView: View {
     let booking: Booking
+    let user: User?
+    @State private var liveBooking: Booking
+    @State private var bookingListener: ListenerRegistration?
+    @State private var showSignSheet = false
+    @State private var showPhotoReleaseSignSheet = false
+    @State private var stripeCheckoutEnabled = false
+    @State private var publicSiteURL = SiteSettings.default.stripePublicBaseUrl
+    @State private var stripePublishableKey = ""
+    @State private var payLoading = false
+    @State private var payError: String?
+
+    init(booking: Booking, user: User?) {
+        self.booking = booking
+        self.user = user
+        _liveBooking = State(initialValue: booking)
+    }
 
     var body: some View {
         Form {
             Section("Status") {
-                LabeledContent("Booking ref", value: booking.bookingRef)
-                LabeledContent("Status", value: booking.status.rawValue.capitalized)
-                LabeledContent("Deposit", value: (booking.depositPaid ?? false) ? "Paid" : "Pending")
-                LabeledContent("Balance", value: (booking.balancePaid ?? false) ? "Paid" : "Pending")
+                LabeledContent("Booking ref", value: liveBooking.bookingRef)
+                LabeledContent("Status", value: liveBooking.status.rawValue.capitalized)
+                LabeledContent("Deposit", value: (liveBooking.depositPaid ?? false) ? "Paid" : "Pending")
+                LabeledContent("Balance", value: (liveBooking.balancePaid ?? false) ? "Paid" : "Pending")
+            }
+            Section("Payment") {
+                if stripeCheckoutEnabled {
+                    if let payError {
+                        Text(payError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    if !(liveBooking.depositPaid ?? false) {
+                        Button {
+                            startDepositCheckout()
+                        } label: {
+                            HStack {
+                                if payLoading { ProgressView() }
+                                Text(payLoading ? "Preparing payment…" : "Pay deposit")
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        .disabled(payLoading)
+                    } else {
+                        Label {
+                            Text("Deposit is already paid.")
+                        } icon: {
+                            Image(systemName: "checkmark.circle.fill")
+                                .symbolRenderingMode(.multicolor)
+                        }
+                        .foregroundStyle(.green)
+                    }
+                    if (liveBooking.depositPaid ?? false) && !(liveBooking.balancePaid ?? false) {
+                        Button {
+                            startBalanceCheckout()
+                        } label: {
+                            HStack {
+                                if payLoading { ProgressView() }
+                                Text(payLoading ? "Preparing payment…" : "Pay remaining balance")
+                                    .fontWeight(.semibold)
+                            }
+                        }
+                        .disabled(payLoading)
+                    }
+                    if (liveBooking.balancePaid ?? false) {
+                        Label {
+                            Text("Balance is already paid.")
+                        } icon: {
+                            Image(systemName: "checkmark.circle.fill")
+                                .symbolRenderingMode(.multicolor)
+                        }
+                        .foregroundStyle(.green)
+                    }
+                } else {
+                    Text("Deposit payment is not enabled right now.")
+                        .foregroundStyle(.secondary)
+                }
             }
             Section("Event") {
-                LabeledContent("Type", value: booking.eventType)
-                LabeledContent("Date", value: booking.eventDate)
-                LabeledContent("Location", value: booking.eventLocation)
-                LabeledContent("Address", value: booking.eventAddress)
-                LabeledContent("Package", value: booking.package)
+                LabeledContent("Type", value: liveBooking.eventType)
+                LabeledContent("Date", value: liveBooking.eventDate)
+                LabeledContent("Location", value: liveBooking.eventLocation)
+                LabeledContent("Address", value: liveBooking.eventAddress)
+                LabeledContent("Package", value: liveBooking.package)
             }
-            if !booking.message.isEmpty {
+            if !liveBooking.message.isEmpty {
                 Section("Message") {
-                    Text(booking.message)
+                    Text(liveBooking.message)
+                }
+            }
+            Section("Contract") {
+                if let signedAt = liveBooking.customerContractSignedAt, !signedAt.isEmpty {
+                    LabeledContent("Status", value: "Signed")
+                    if let signedName = liveBooking.customerContractSignedName, !signedName.isEmpty {
+                        LabeledContent("Signed by", value: signedName)
+                    }
+                    LabeledContent("Signed at", value: signedAt)
+                } else {
+                    Text("Not signed yet.")
+                        .foregroundStyle(.secondary)
+                    Button("Sign contract now") {
+                        showSignSheet = true
+                    }
+                }
+            }
+            Section("Photo release") {
+                if let signedAt = liveBooking.customerPhotoReleaseSignedAt, !signedAt.isEmpty {
+                    LabeledContent("Status", value: "Signed")
+                    if let signedName = liveBooking.customerPhotoReleaseSignedName, !signedName.isEmpty {
+                        LabeledContent("Signed by", value: signedName)
+                    }
+                    LabeledContent("Signed at", value: signedAt)
+                } else {
+                    Text("Not signed yet.")
+                        .foregroundStyle(.secondary)
+                    Button("Sign photo release") {
+                        showPhotoReleaseSignSheet = true
+                    }
                 }
             }
         }
@@ -240,5 +339,328 @@ private struct CustomerBookingDetailView: View {
         #endif
         .jitterbugMacInsetLeadingScrollableForm()
         .navigationTitle("Booking")
+        .onAppear {
+            bookingListener?.remove()
+            bookingListener = BookingService().observeBooking(id: booking.id) { updated in
+                guard let updated else { return }
+                DispatchQueue.main.async {
+                    liveBooking = updated
+                }
+            }
+            Task {
+                let s = await SettingsService().getSiteSettings()
+                await MainActor.run {
+                    stripeCheckoutEnabled = s.stripeCheckoutEnabled
+                    publicSiteURL = s.stripePublicBaseUrl
+                    stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
+                }
+            }
+        }
+        .onDisappear {
+            bookingListener?.remove()
+            bookingListener = nil
+        }
+        .sheet(isPresented: $showSignSheet) {
+            CustomerContractSignSheet(booking: liveBooking, user: user) {
+                showSignSheet = false
+            }
+        }
+        .sheet(isPresented: $showPhotoReleaseSignSheet) {
+            CustomerPhotoReleaseSignSheet(booking: liveBooking, user: user) {
+                showPhotoReleaseSignSheet = false
+            }
+        }
+    }
+
+    private func startDepositCheckout() {
+        payError = nil
+        payLoading = true
+        Task {
+            do {
+                _ = try await StripeNativePayment.presentDepositSheet(
+                    bookingId: liveBooking.id,
+                    publicSiteBaseURL: publicSiteURL,
+                    publishableKey: stripePublishableKey
+                )
+                await MainActor.run {
+                    payLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    payLoading = false
+                    payError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func startBalanceCheckout() {
+        payError = nil
+        payLoading = true
+        Task {
+            do {
+                _ = try await StripeNativePayment.presentBalanceSheet(
+                    bookingId: liveBooking.id,
+                    publicSiteBaseURL: publicSiteURL,
+                    publishableKey: stripePublishableKey
+                )
+                await MainActor.run {
+                    payLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    payLoading = false
+                    payError = error.localizedDescription
+                }
+            }
+        }
+    }
+}
+
+private struct CustomerPhotoReleaseSignSheet: View {
+    let booking: Booking
+    let user: User?
+    var onDone: () -> Void
+
+    @State private var signerName = ""
+    @State private var saving = false
+    @State private var error: String?
+    @State private var strokes: [[CGPoint]] = []
+    @State private var currentStroke: [CGPoint] = []
+
+    private var hasSignature: Bool {
+        !strokes.isEmpty || !currentStroke.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Photo release summary") {
+                    Text("By signing, you acknowledge and approve the photo release form for booking \(booking.bookingRef).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Section("Signer") {
+                    TextField("Full legal name", text: $signerName)
+                }
+                Section("Draw signature") {
+                    SignaturePad(strokes: $strokes, currentStroke: $currentStroke)
+                        .frame(height: 180)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.35), lineWidth: 1))
+                    Button("Clear signature") {
+                        strokes = []
+                        currentStroke = []
+                    }
+                    .disabled(!hasSignature)
+                }
+                if let error {
+                    Section {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("Sign Photo Release")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onDone)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save signature") {
+                        saveSignature()
+                    }
+                    .disabled(saving)
+                }
+            }
+        }
+    }
+
+    private func saveSignature() {
+        error = nil
+        let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedName.isEmpty else {
+            error = "Enter your full legal name."
+            return
+        }
+        let allStrokes = strokes + (currentStroke.isEmpty ? [] : [currentStroke])
+        guard allStrokes.contains(where: { !$0.isEmpty }) else {
+            error = "Please draw your signature."
+            return
+        }
+        guard let user else {
+            error = "You must be signed in."
+            return
+        }
+
+        saving = true
+        let firestoreStrokes: [[[Double]]] = allStrokes.map { stroke in
+            stroke.map { [Double($0.x), Double($0.y)] }
+        }
+
+        Task {
+            do {
+                try await BookingService().signCustomerPhotoRelease(
+                    bookingId: booking.id,
+                    signerName: cleanedName,
+                    signerEmail: user.email ?? "",
+                    signerUid: user.uid,
+                    signatureStrokes: firestoreStrokes
+                )
+                await MainActor.run {
+                    saving = false
+                    onDone()
+                }
+            } catch {
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    saving = false
+                }
+            }
+        }
+    }
+}
+
+private struct CustomerContractSignSheet: View {
+    let booking: Booking
+    let user: User?
+    var onDone: () -> Void
+
+    @State private var signerName = ""
+    @State private var saving = false
+    @State private var error: String?
+    @State private var strokes: [[CGPoint]] = []
+    @State private var currentStroke: [CGPoint] = []
+
+    private var hasSignature: Bool {
+        !strokes.isEmpty || !currentStroke.isEmpty
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Contract summary") {
+                    Text("By signing, you accept the booking contract terms for reference \(booking.bookingRef).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Section("Signer") {
+                    TextField("Full legal name", text: $signerName)
+                }
+                Section("Draw signature") {
+                    SignaturePad(strokes: $strokes, currentStroke: $currentStroke)
+                        .frame(height: 180)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.35), lineWidth: 1))
+                    Button("Clear signature") {
+                        strokes = []
+                        currentStroke = []
+                    }
+                    .disabled(!hasSignature)
+                }
+                if let error {
+                    Section {
+                        Text(error)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("Sign Contract")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onDone)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save signature") {
+                        saveSignature()
+                    }
+                    .disabled(saving)
+                }
+            }
+        }
+    }
+
+    private func saveSignature() {
+        error = nil
+        let cleanedName = signerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedName.isEmpty else {
+            error = "Enter your full legal name."
+            return
+        }
+        let allStrokes = strokes + (currentStroke.isEmpty ? [] : [currentStroke])
+        guard allStrokes.contains(where: { !$0.isEmpty }) else {
+            error = "Please draw your signature."
+            return
+        }
+        guard let user else {
+            error = "You must be signed in."
+            return
+        }
+
+        saving = true
+        let firestoreStrokes: [[[Double]]] = allStrokes.map { stroke in
+            stroke.map { [Double($0.x), Double($0.y)] }
+        }
+
+        Task {
+            do {
+                try await BookingService().signCustomerContract(
+                    bookingId: booking.id,
+                    signerName: cleanedName,
+                    signerEmail: user.email ?? "",
+                    signerUid: user.uid,
+                    signatureStrokes: firestoreStrokes
+                )
+                await MainActor.run {
+                    saving = false
+                    onDone()
+                }
+            } catch {
+                await MainActor.run {
+                    self.error = error.localizedDescription
+                    saving = false
+                }
+            }
+        }
+    }
+}
+
+private struct SignaturePad: View {
+    @Binding var strokes: [[CGPoint]]
+    @Binding var currentStroke: [CGPoint]
+
+    var body: some View {
+        GeometryReader { _ in
+            ZStack {
+                Color.clear
+                Path { path in
+                    for stroke in strokes {
+                        guard let first = stroke.first else { continue }
+                        path.move(to: first)
+                        for point in stroke.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                    }
+                    if let first = currentStroke.first {
+                        path.move(to: first)
+                        for point in currentStroke.dropFirst() {
+                            path.addLine(to: point)
+                        }
+                    }
+                }
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+            }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        currentStroke.append(value.location)
+                    }
+                    .onEnded { _ in
+                        if !currentStroke.isEmpty {
+                            strokes.append(currentStroke)
+                            currentStroke = []
+                        }
+                    }
+            )
+        }
     }
 }

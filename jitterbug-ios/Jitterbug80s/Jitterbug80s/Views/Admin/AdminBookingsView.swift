@@ -18,10 +18,17 @@ private func jbCopyStringToPasteboard(_ string: String) {
 }
 
 struct AdminBookingsView: View {
+    private enum ContractSignFilter: String, CaseIterable {
+        case all = "All"
+        case signedOnly = "Signed only"
+        case unsignedOnly = "Unsigned only"
+    }
+
     @State private var bookings: [Booking] = []
     @State private var loading = true
     @State private var error: String?
     @State private var filterStatus: BookingStatus?
+    @State private var contractSignFilter: ContractSignFilter = .all
     @State private var searchText = ""
     @State private var selectedBooking: Booking?
     @State private var exportItem: ExportableURL?
@@ -31,6 +38,14 @@ struct AdminBookingsView: View {
         var list = bookings
         if let status = filterStatus {
             list = list.filter { $0.status == status }
+        }
+        switch contractSignFilter {
+        case .all:
+            break
+        case .signedOnly:
+            list = list.filter { ($0.customerContractSignedAt?.isEmpty == false) }
+        case .unsignedOnly:
+            list = list.filter { ($0.customerContractSignedAt?.isEmpty != false) }
         }
         if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
             let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
@@ -90,6 +105,17 @@ struct AdminBookingsView: View {
                                         Text(b.status.rawValue.capitalized)
                                             .font(.caption2)
                                             .foregroundStyle(statusColor(b.status))
+                                        if let signedAt = b.customerContractSignedAt, !signedAt.isEmpty {
+                                            Label {
+                                                Text("Contract signed")
+                                            } icon: {
+                                                Image(systemName: "signature")
+                                                    .symbolRenderingMode(.multicolor)
+                                            }
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.green)
+                                            .accessibilityLabel("Contract signed at \(signedAt)")
+                                        }
                                     }
                                 }
                             }
@@ -107,6 +133,11 @@ struct AdminBookingsView: View {
                         Button(s.rawValue.capitalized) { filterStatus = s }
                     }
                 } label: { Text("Filter") }
+                Menu {
+                    ForEach(ContractSignFilter.allCases, id: \.self) { option in
+                        Button(option.rawValue) { contractSignFilter = option }
+                    }
+                } label: { Text("Contract") }
                 Button("Export CSV") { exportCSV() }
                     .disabled(filtered.isEmpty)
                 Button("Add booking") { showAddBooking = true }
@@ -490,6 +521,17 @@ struct AdminBookingDetailView: View {
                             .onChange(of: depositPaid) { _, _ in savePaymentFlags() }
                         Toggle("Balance paid", isOn: $balancePaid)
                             .onChange(of: balancePaid) { _, _ in savePaymentFlags() }
+                    }
+                    Section("Contract") {
+                        if let signedAt = booking.customerContractSignedAt, !signedAt.isEmpty {
+                            LabeledContent("Status", value: "Signed")
+                            if let signedName = booking.customerContractSignedName, !signedName.isEmpty {
+                                LabeledContent("Signed by", value: signedName)
+                            }
+                            LabeledContent("Signed at", value: signedAt)
+                        } else {
+                            LabeledContent("Status", value: "Not signed")
+                        }
                     }
                 }
                 Section {
