@@ -227,6 +227,8 @@ private struct CustomerBookingDetailView: View {
     @State private var changeRequestSaving = false
     @State private var bookingEvents: [BookingEvent] = []
     @State private var signedDocuments: [SignedDocumentSnapshot] = []
+    @State private var showContractTerms = false
+    @State private var showPhotoReleaseTerms = false
 
     init(booking: Booking, user: User?) {
         self.booking = booking
@@ -308,6 +310,24 @@ private struct CustomerBookingDetailView: View {
                 }
             }
             Section("Contract") {
+                DisclosureGroup("Review contract terms", isExpanded: $showContractTerms) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Please review before signing:")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        ForEach(Array(BookingContractTerms.all.enumerated()), id: \.offset) { _, term in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(term.title)
+                                    .font(.subheadline.weight(.semibold))
+                                Text(term.body)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
                 if let signedAt = liveBooking.customerContractSignedAt, !signedAt.isEmpty {
                     LabeledContent("Status", value: "Signed")
                     if let signedName = liveBooking.customerContractSignedName, !signedName.isEmpty {
@@ -323,6 +343,26 @@ private struct CustomerBookingDetailView: View {
                 }
             }
             Section("Photo release") {
+                DisclosureGroup("Review photo release terms", isExpanded: $showPhotoReleaseTerms) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("By signing, you grant permission described below:")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text("When you grant permission, we may use selected photos from your event on our website, social media, and marketing materials to showcase our work.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text("We will not use images of minors unless you separately grant \"minor permission\" on the booking form.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text("If you do not grant permission, we will not use your event photos for marketing. You can withdraw permission later by contacting us, and we will remove existing uses where practicable.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                        Text("You warrant that you have authority to agree to the use of likeness of attendees at your event (or that you have obtained consent where required).")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
                 if let signedAt = liveBooking.customerPhotoReleaseSignedAt, !signedAt.isEmpty {
                     LabeledContent("Status", value: "Signed")
                     if let signedName = liveBooking.customerPhotoReleaseSignedName, !signedName.isEmpty {

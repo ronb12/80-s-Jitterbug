@@ -109,6 +109,17 @@ struct AdminBookingsView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
+                        if let error, !error.isEmpty {
+                            Section {
+                                Text(error)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.red)
+                            } header: {
+                                Text("Load error")
+                            } footer: {
+                                Text("If you recently changed admin emails, deploy Firestore rules so admin read access matches the app allowlist.")
+                            }
+                        }
                         Section {
                             bookingStatsView
                         }
@@ -254,13 +265,17 @@ struct AdminBookingsView: View {
 
     private func load() {
         loading = true
+        error = nil
         Task {
             do {
-                bookings = try await BookingService().listBookings()
-                await MainActor.run { loading = false }
+                let next = try await BookingService().listBookings()
+                await MainActor.run {
+                    bookings = next
+                    loading = false
+                }
             } catch {
                 await MainActor.run {
-                    self.error = error.localizedDescription
+                    self.error = "Could not load bookings: \(error.localizedDescription)"
                     loading = false
                 }
             }

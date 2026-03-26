@@ -70,7 +70,15 @@ final class BookingService {
         if let websiteResult = await submitBookingToPublicAPI(form) {
             var mirrorData = data
             mirrorData["bookingRef"] = websiteResult.ref
-            try? await db.collection(collectionId).document(websiteResult.id).setData(mirrorData, merge: true)
+            do {
+                try await db.collection(collectionId).document(websiteResult.id).setData(mirrorData, merge: true)
+            } catch {
+                // If mirroring to the same ID fails (rules/network), create a fallback Firestore record
+                // so admin screens still show the newly created customer booking.
+                var fallbackMirror = mirrorData
+                fallbackMirror["sourceBookingId"] = websiteResult.id
+                _ = try await db.collection(collectionId).addDocument(data: fallbackMirror)
+            }
             try? await appendBookingEvent(
                 bookingId: websiteResult.id,
                 type: "booking_created",
