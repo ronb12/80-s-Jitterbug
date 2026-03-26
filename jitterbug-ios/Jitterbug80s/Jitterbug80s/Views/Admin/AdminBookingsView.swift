@@ -18,7 +18,21 @@ private func jbCopyStringToPasteboard(_ string: String) {
 }
 
 struct AdminBookingsView: View {
+    private enum QueueFilter: String, CaseIterable {
+        case all = "All"
+        case actionRequired = "Action required"
+        case needsContract = "Needs contract"
+        case needsPhotoRelease = "Needs photo release"
+        case unpaid = "Unpaid"
+    }
+
     private enum ContractSignFilter: String, CaseIterable {
+        case all = "All"
+        case signedOnly = "Signed only"
+        case unsignedOnly = "Unsigned only"
+    }
+
+    private enum PhotoReleaseSignFilter: String, CaseIterable {
         case all = "All"
         case signedOnly = "Signed only"
         case unsignedOnly = "Unsigned only"
@@ -29,6 +43,8 @@ struct AdminBookingsView: View {
     @State private var error: String?
     @State private var filterStatus: BookingStatus?
     @State private var contractSignFilter: ContractSignFilter = .all
+    @State private var photoReleaseSignFilter: PhotoReleaseSignFilter = .all
+    @State private var queueFilter: QueueFilter = .all
     @State private var searchText = ""
     @State private var selectedBooking: Booking?
     @State private var exportItem: ExportableURL?
@@ -46,6 +62,31 @@ struct AdminBookingsView: View {
             list = list.filter { ($0.customerContractSignedAt?.isEmpty == false) }
         case .unsignedOnly:
             list = list.filter { ($0.customerContractSignedAt?.isEmpty != false) }
+        }
+        switch photoReleaseSignFilter {
+        case .all:
+            break
+        case .signedOnly:
+            list = list.filter { ($0.customerPhotoReleaseSignedAt?.isEmpty == false) }
+        case .unsignedOnly:
+            list = list.filter { ($0.customerPhotoReleaseSignedAt?.isEmpty != false) }
+        }
+        switch queueFilter {
+        case .all:
+            break
+        case .actionRequired:
+            list = list.filter {
+                ($0.customerContractSignedAt?.isEmpty != false)
+                    || ($0.customerPhotoReleaseSignedAt?.isEmpty != false)
+                    || (($0.depositPaid ?? false) == false)
+                    || (($0.balancePaid ?? false) == false)
+            }
+        case .needsContract:
+            list = list.filter { ($0.customerContractSignedAt?.isEmpty != false) }
+        case .needsPhotoRelease:
+            list = list.filter { ($0.customerPhotoReleaseSignedAt?.isEmpty != false) }
+        case .unpaid:
+            list = list.filter { (($0.depositPaid ?? false) == false) || (($0.balancePaid ?? false) == false) }
         }
         if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
             let q = searchText.trimmingCharacters(in: .whitespaces).lowercased()
@@ -116,6 +157,17 @@ struct AdminBookingsView: View {
                                             .foregroundStyle(.green)
                                             .accessibilityLabel("Contract signed at \(signedAt)")
                                         }
+                                        if let signedAt = b.customerPhotoReleaseSignedAt, !signedAt.isEmpty {
+                                            Label {
+                                                Text("Photo release signed")
+                                            } icon: {
+                                                Image(systemName: "photo.on.rectangle.angled")
+                                                    .symbolRenderingMode(.multicolor)
+                                            }
+                                            .font(.caption2.weight(.semibold))
+                                            .foregroundStyle(.green)
+                                            .accessibilityLabel("Photo release signed at \(signedAt)")
+                                        }
                                     }
                                 }
                             }
@@ -138,6 +190,16 @@ struct AdminBookingsView: View {
                         Button(option.rawValue) { contractSignFilter = option }
                     }
                 } label: { Text("Contract") }
+                Menu {
+                    ForEach(PhotoReleaseSignFilter.allCases, id: \.self) { option in
+                        Button(option.rawValue) { photoReleaseSignFilter = option }
+                    }
+                } label: { Text("Photo release") }
+                Menu {
+                    ForEach(QueueFilter.allCases, id: \.self) { option in
+                        Button(option.rawValue) { queueFilter = option }
+                    }
+                } label: { Text("Queue") }
                 Button("Export CSV") { exportCSV() }
                     .disabled(filtered.isEmpty)
                 Button("Add booking") { showAddBooking = true }
@@ -382,6 +444,8 @@ struct AdminBookingDetailView: View {
     @State private var stripePublishableKey = ""
     @State private var stripePayLoading = false
     @State private var stripePayError: String?
+    @State private var changeRequests: [BookingChangeRequest] = []
+    @State private var bookingEvents: [BookingEvent] = []
 
     init(booking: Booking, onDismiss: @escaping () -> Void, onUpdated: @escaping () -> Void) {
         self.booking = booking
@@ -533,6 +597,54 @@ struct AdminBookingDetailView: View {
                             LabeledContent("Status", value: "Not signed")
                         }
                     }
+                    Section("Photo release") {
+                        if let signedAt = booking.customerPhotoReleaseSignedAt, !signedAt.isEmpty {
+                            LabeledContent("Status", value: "Signed")
+                            if let signedName = booking.customerPhotoReleaseSignedName, !signedName.isEmpty {
+                                LabeledContent("Signed by", value: signedName)
+                            }
+                            LabeledContent("Signed at", value: signedAt)
+                        } else {
+                            LabeledContent("Status", value: "Not signed")
+                        }
+                    }
+                    if !changeRequests.isEmpty {
+                        Section("Customer change requests") {
+                            ForEach(changeRequests) { req in
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(req.requestText)
+                                        .font(.subheadline)
+                                    Text("\(req.requesterEmail) · \(req.createdAt)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                    if req.status == "pending" {
+                                        HStack {
+                                            Button("Approve") { resolveChangeRequest(req.id, status: "approved") }
+                                            Button("Reject", role: .destructive) { resolveChangeRequest(req.id, status: "rejected") }
+                                        }
+                                        .font(.caption)
+                                    } else {
+                                        Text("Status: \(req.status.capitalized)")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if !bookingEvents.isEmpty {
+                        Section("Timeline") {
+                            ForEach(bookingEvents) { event in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(event.message)
+                                        .font(.subheadline)
+                                    Text("\(event.type) · \(event.createdAt)")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
                 }
                 Section {
                     Link("Email client", destination: URL(string: "mailto:\(booking.email)")!)
@@ -616,6 +728,8 @@ struct AdminBookingDetailView: View {
                 stripeCheckoutEnabled = s.stripeCheckoutEnabled
                 stripePublicSiteURL = s.stripePublicBaseUrl
                 stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
+                changeRequests = await BookingService().listChangeRequests(bookingId: booking.id)
+                bookingEvents = await BookingService().listBookingEvents(bookingId: booking.id)
             }
         }
         .jitterbugMacNavigationRootFill()
@@ -706,6 +820,19 @@ struct AdminBookingDetailView: View {
         Task {
             try? await BookingService().deleteBooking(id: booking.id)
             await MainActor.run { onDismiss(); onUpdated() }
+        }
+    }
+
+    private func resolveChangeRequest(_ requestId: String, status: String) {
+        Task {
+            try? await BookingService().resolveChangeRequest(bookingId: booking.id, requestId: requestId, status: status)
+            let nextRequests = await BookingService().listChangeRequests(bookingId: booking.id)
+            let nextEvents = await BookingService().listBookingEvents(bookingId: booking.id)
+            await MainActor.run {
+                changeRequests = nextRequests
+                bookingEvents = nextEvents
+                onUpdated()
+            }
         }
     }
 }

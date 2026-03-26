@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 import FirebaseFirestore
 
 final class BookingService {
@@ -62,6 +63,12 @@ final class BookingService {
             "updatedAt": FieldValue.serverTimestamp()
         ]
         let docRef = try await db.collection(collectionId).addDocument(data: data)
+        try? await appendBookingEvent(
+            bookingId: docRef.documentID,
+            type: "booking_created",
+            message: "Booking created by customer form.",
+            actorEmail: form.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        )
         await Self.notifyNewBookingPushIfConfigured(
             bookingId: docRef.documentID,
             bookingRef: ref,
@@ -149,6 +156,12 @@ final class BookingService {
             update["customerContractSignatureStrokes"] = signatureStrokes
         }
         try await updateBooking(id: bookingId, data: update)
+        try? await appendBookingEvent(
+            bookingId: bookingId,
+            type: "contract_signed",
+            message: "Customer signed contract.",
+            actorEmail: signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        )
     }
 
     func signCustomerPhotoRelease(
@@ -170,6 +183,89 @@ final class BookingService {
             update["customerPhotoReleaseSignatureStrokes"] = signatureStrokes
         }
         try await updateBooking(id: bookingId, data: update)
+        try? await appendBookingEvent(
+            bookingId: bookingId,
+            type: "photo_release_signed",
+            message: "Customer signed photo release.",
+            actorEmail: signerEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        )
+    }
+
+    func addCustomerChangeRequest(bookingId: String, requestText: String, requesterEmail: String) async throws {
+        let text = requestText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let data: [String: Any] = [
+            "requestText": text,
+            "status": "pending",
+            "requesterEmail": requesterEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        _ = try await db.collection(collectionId).document(bookingId).collection("changeRequests").addDocument(data: data)
+        try? await appendBookingEvent(
+            bookingId: bookingId,
+            type: "change_request_submitted",
+            message: "Customer submitted a change request.",
+            actorEmail: requesterEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        )
+    }
+
+    func listBookingEvents(bookingId: String) async -> [BookingEvent] {
+        do {
+            let snap = try await db.collection(collectionId).document(bookingId).collection("events")
+                .order(by: "createdAt", descending: true)
+                .getDocuments()
+            return snap.documents.map { d in
+                let data = d.data()
+                return BookingEvent(
+                    id: d.documentID,
+                    type: data["type"] as? String ?? "",
+                    message: data["message"] as? String ?? "",
+                    actorEmail: data["actorEmail"] as? String ?? "",
+                    createdAt: Self.isoString(from: data["createdAt"])
+                )
+            }
+        } catch {
+            return []
+        }
+    }
+
+    func listChangeRequests(bookingId: String) async -> [BookingChangeRequest] {
+        do {
+            let snap = try await db.collection(collectionId).document(bookingId).collection("changeRequests")
+                .order(by: "createdAt", descending: true)
+                .getDocuments()
+            return snap.documents.map { d in
+                let data = d.data()
+                return BookingChangeRequest(
+                    id: d.documentID,
+                    requestText: data["requestText"] as? String ?? "",
+                    status: data["status"] as? String ?? "pending",
+                    requesterEmail: data["requesterEmail"] as? String ?? "",
+                    createdAt: Self.isoString(from: data["createdAt"])
+                )
+            }
+        } catch {
+            return []
+        }
+    }
+
+    func resolveChangeRequest(bookingId: String, requestId: String, status: String) async throws {
+        guard status == "approved" || status == "rejected" else { return }
+        try await db.collection(collectionId)
+            .document(bookingId)
+            .collection("changeRequests")
+            .document(requestId)
+            .updateData([
+                "status": status,
+                "updatedAt": FieldValue.serverTimestamp()
+            ])
+        let adminEmail = FirebaseManager.shared.auth.currentUser?.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "admin"
+        try? await appendBookingEvent(
+            bookingId: bookingId,
+            type: "change_request_\(status)",
+            message: "Admin marked a change request as \(status).",
+            actorEmail: adminEmail
+        )
     }
 
     func getBookingStatusByRef(_ ref: String) async -> BookingStatusPublic? {
@@ -203,5 +299,15 @@ final class BookingService {
 
     func deleteBooking(id: String) async throws {
         try await db.collection(collectionId).document(id).delete()
+    }
+
+    private func appendBookingEvent(bookingId: String, type: String, message: String, actorEmail: String) async throws {
+        let payload: [String: Any] = [
+            "type": type,
+            "message": message,
+            "actorEmail": actorEmail,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        _ = try await db.collection(collectionId).document(bookingId).collection("events").addDocument(data: payload)
     }
 }

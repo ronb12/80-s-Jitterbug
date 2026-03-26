@@ -223,6 +223,9 @@ private struct CustomerBookingDetailView: View {
     @State private var stripePublishableKey = ""
     @State private var payLoading = false
     @State private var payError: String?
+    @State private var changeRequestText = ""
+    @State private var changeRequestSaving = false
+    @State private var bookingEvents: [BookingEvent] = []
 
     init(booking: Booking, user: User?) {
         self.booking = booking
@@ -333,6 +336,30 @@ private struct CustomerBookingDetailView: View {
                     }
                 }
             }
+            Section("Request changes") {
+                TextField("Request date, package, or detail changes", text: $changeRequestText, axis: .vertical)
+                    .lineLimit(2...5)
+                Button(changeRequestSaving ? "Submitting…" : "Submit change request") {
+                    submitChangeRequest()
+                }
+                .disabled(changeRequestSaving || changeRequestText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Text("Your request appears for the admin team to review and approve.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            if !bookingEvents.isEmpty {
+                Section("Timeline") {
+                    ForEach(bookingEvents) { event in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(event.message)
+                                .font(.subheadline)
+                            Text("\(event.type) · \(event.createdAt)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
         }
         #if os(macOS)
         .controlSize(.small)
@@ -346,6 +373,10 @@ private struct CustomerBookingDetailView: View {
                 DispatchQueue.main.async {
                     liveBooking = updated
                 }
+            }
+            Task {
+                let events = await BookingService().listBookingEvents(bookingId: booking.id)
+                await MainActor.run { bookingEvents = events }
             }
             Task {
                 let s = await SettingsService().getSiteSettings()
@@ -410,6 +441,31 @@ private struct CustomerBookingDetailView: View {
             } catch {
                 await MainActor.run {
                     payLoading = false
+                    payError = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func submitChangeRequest() {
+        guard let email = user?.email else { return }
+        changeRequestSaving = true
+        Task {
+            do {
+                try await BookingService().addCustomerChangeRequest(
+                    bookingId: liveBooking.id,
+                    requestText: changeRequestText,
+                    requesterEmail: email
+                )
+                let events = await BookingService().listBookingEvents(bookingId: booking.id)
+                await MainActor.run {
+                    changeRequestSaving = false
+                    changeRequestText = ""
+                    bookingEvents = events
+                }
+            } catch {
+                await MainActor.run {
+                    changeRequestSaving = false
                     payError = error.localizedDescription
                 }
             }

@@ -3,26 +3,75 @@ rules_version = '2';
 // Admin operations require Firebase Auth (sign in via Firebase Console users).
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function requesterEmail() {
+      return isSignedIn() ? request.auth.token.email : null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && requesterEmail() in [
+        "sbowie207@gmail.com",
+        "apple@123.com"
+      ];
+    }
+
+    function isBookingOwner() {
+      return isSignedIn()
+        && resource.data.email is string
+        && resource.data.email == requesterEmail();
+    }
+
     match /bookings/{bookingId} {
       // Public booking form must not set payment fields (only Cloud Functions / admin).
       allow create: if !request.resource.data.keys().hasAny([
         'depositPaid',
         'stripeCheckoutSessionId',
-        'stripePaymentIntentId'
-      ]);
-      allow read, update, delete: if request.auth != null;
+        'stripePaymentIntentId',
+        'balancePaid'
+      ]) && request.resource.data.email is string;
+      allow read: if isAdmin() || isBookingOwner();
+      allow update: if isAdmin()
+        || (isBookingOwner() && !request.resource.data.diff(resource.data).changedKeys().hasAny([
+          'status',
+          'depositPaid',
+          'balancePaid',
+          'stripeCheckoutSessionId',
+          'stripePaymentIntentId',
+          'customerContractSignedByUid',
+          'customerPhotoReleaseSignedByUid'
+        ]));
+      allow delete: if isAdmin();
     }
+
+    match /bookings/{bookingId}/events/{eventId} {
+      allow read: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/bookings/$(bookingId)).data.email == requesterEmail());
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.actorEmail == requesterEmail());
+      allow update, delete: if false;
+    }
+
+    match /bookings/{bookingId}/changeRequests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/bookings/$(bookingId)).data.email == requesterEmail());
+      allow create: if isSignedIn()
+        && request.resource.data.requesterEmail == requesterEmail()
+        && request.resource.data.status == "pending";
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
     match /settings/{docId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     match /gallery/{photoId} {
       allow read: if true;
-      allow create, update, delete: if request.auth != null;
+      allow create, update, delete: if isAdmin();
     }
     // Admin devices: each signed-in admin stores one FCM token (MVP) for booking/deposit alerts.
     match /adminFCM/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin() && request.auth.uid == uid;
     }
     // Customer deposit notifications: only Cloud Functions (HTTPS registerBookingPushToken) may write.
     match /bookings/{bookingId}/notifyTokens/{tokenDoc} {
