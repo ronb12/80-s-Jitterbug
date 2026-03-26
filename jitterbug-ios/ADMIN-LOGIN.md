@@ -2,7 +2,7 @@
 
 ## Mac app (`Jitterbug80sMac`)
 
-- **App Sandbox** requires **Outgoing network** for Firebase Auth. The Mac target uses `Jitterbug80sMac.entitlements` with `com.apple.security.network.client` enabled.
+- **App Sandbox** requires **Outgoing network** for Firebase Auth. The Mac target uses `Jitterbug80sMac-Debug.entitlements` / `Jitterbug80sMac-Release.entitlements` with `com.apple.security.network.client` enabled.
 - Rebuild and run after entitlement changes.
 
 ## iOS / Mac — checklist

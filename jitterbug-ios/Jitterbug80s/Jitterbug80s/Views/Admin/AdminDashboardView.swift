@@ -74,6 +74,7 @@ struct AdminDashboardView: View {
                                     .symbolRenderingMode(.multicolor)
                                 Text("\(pendingCount) pending request\(pendingCount == 1 ? "" : "s")")
                                     .font(.headline)
+                                    .foregroundStyle(.primary)
                             }
                             if let next = nextBooking {
                                 HStack {
@@ -81,6 +82,7 @@ struct AdminDashboardView: View {
                                         .symbolRenderingMode(.multicolor)
                                     Text("Next: \(next.eventDate) — \(next.eventType) — \(next.name)")
                                         .font(.subheadline)
+                                        .foregroundStyle(.primary)
                                 }
                             }
                             Button {
@@ -114,6 +116,7 @@ struct AdminDashboardView: View {
                 }
 
             }
+            .jitterbugMacListTightUnderNavigationTitle()
             .navigationTitle("Admin")
             .toolbar {
                 #if os(iOS)
@@ -134,6 +137,7 @@ struct AdminDashboardView: View {
             }
             .task { await load() }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     @ViewBuilder
@@ -172,6 +176,7 @@ struct AdminDashboardView: View {
                     .symbolRenderingMode(.multicolor)
                     .frame(width: 28, alignment: .center)
                 Text(title)
+                    .foregroundStyle(.primary)
             }
         }
     }

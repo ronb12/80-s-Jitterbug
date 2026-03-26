@@ -78,7 +78,7 @@ Apple requires a clear, user-facing reason for each capability that accesses sen
 
 **Action:**  
 - In App Store Connect → App Privacy, list **Firebase** (Auth, Firestore) and, if applicable, that **images** are processed by a third-party service (ImgBB) for gallery uploads.  
-- **ImgBB API key:** Already configured in the app target’s Info (`ImgbbApiKey`). No action needed. If the repo is public, keep the key in a private config or use a backend proxy.
+- **ImgBB API key:** Set via Xcode **User-Defined** `IMGBB_API_KEY` or env (see repo `jitterbug-ios/BUILD-SECRETS.md`); do not commit keys. For stronger protection, use a backend upload proxy instead of embedding a client key.
 
 ---
 

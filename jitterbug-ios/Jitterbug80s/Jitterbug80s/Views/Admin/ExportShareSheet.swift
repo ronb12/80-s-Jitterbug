@@ -52,33 +52,41 @@ private struct MacExportedFileSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Export ready")
-                .font(.headline)
-            Text(url.lastPathComponent)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Button("Reveal in Finder") {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-                onDismiss()
-            }
-            .keyboardShortcut(.defaultAction)
-            Button("Save as…") {
-                let panel = NSSavePanel()
-                panel.nameFieldStringValue = url.lastPathComponent
-                panel.allowedContentTypes = saveContentTypes
-                panel.begin { response in
-                    if response == .OK, let dest = panel.url {
-                        try? FileManager.default.removeItem(at: dest)
-                        try? FileManager.default.copyItem(at: url, to: dest)
-                    }
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(spacing: 16) {
+                Text("Export ready")
+                    .font(.headline)
+                Text(url.lastPathComponent)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Reveal in Finder") {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
                     onDismiss()
                 }
+                .keyboardShortcut(.defaultAction)
+                Button("Save as…") {
+                    let panel = NSSavePanel()
+                    panel.nameFieldStringValue = url.lastPathComponent
+                    panel.allowedContentTypes = saveContentTypes
+                    panel.begin { response in
+                        if response == .OK, let dest = panel.url {
+                            try? FileManager.default.removeItem(at: dest)
+                            try? FileManager.default.copyItem(at: url, to: dest)
+                        }
+                        onDismiss()
+                    }
+                }
+                Button("Cancel", role: .cancel, action: onDismiss)
             }
-            Button("Cancel", role: .cancel, action: onDismiss)
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .top)
         }
-        .padding(24)
-        .frame(minWidth: 300)
+        .jitterbugMacNavigationRootFill()
+        .jitterbugMacFlushScrollContentMargins()
+        .jitterbugMacSheetChromeIfNeeded()
     }
 }
 #endif

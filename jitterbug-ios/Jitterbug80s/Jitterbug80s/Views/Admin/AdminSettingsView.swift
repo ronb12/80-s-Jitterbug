@@ -14,6 +14,7 @@ struct AdminSettingsView: View {
     @State private var error: String?
     @State private var success = false
     @State private var exportItem: ExportableFile?
+    @State private var showStripeKeys = false
 
     var body: some View {
         NavigationStack {
@@ -29,6 +30,7 @@ struct AdminSettingsView: View {
                     ExportedFileShareSheet(exportURL: item.url, onDismiss: { exportItem = nil })
                 }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     @ViewBuilder
@@ -89,16 +91,30 @@ struct AdminSettingsView: View {
                                 Text("Test").tag("test")
                                 Text("Live").tag("live")
                             }
-                            TextField("Publishable key — test (pk_test_…)", text: $settings.stripePublishableKeyTest)
-                                #if os(iOS)
-                                .textInputAutocapitalization(.never)
-                                #endif
-                                .font(.system(.body, design: .monospaced))
-                            TextField("Publishable key — live (pk_live_…)", text: $settings.stripePublishableKeyLive)
-                                #if os(iOS)
-                                .textInputAutocapitalization(.never)
-                                #endif
-                                .font(.system(.body, design: .monospaced))
+                            Toggle("Show Stripe keys while editing", isOn: $showStripeKeys)
+                            if showStripeKeys {
+                                TextField("Publishable key — test (pk_test_…)", text: $settings.stripePublishableKeyTest)
+                                    #if os(iOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                    .font(.system(.body, design: .monospaced))
+                                TextField("Publishable key — live (pk_live_…)", text: $settings.stripePublishableKeyLive)
+                                    #if os(iOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                    .font(.system(.body, design: .monospaced))
+                            } else {
+                                SecureField("Publishable key — test (pk_test_…)", text: $settings.stripePublishableKeyTest)
+                                    #if os(iOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                    .font(.system(.body, design: .monospaced))
+                                SecureField("Publishable key — live (pk_live_…)", text: $settings.stripePublishableKeyLive)
+                                    #if os(iOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                    .font(.system(.body, design: .monospaced))
+                            }
                         } header: {
                             Text("Stripe checkout")
                         } footer: {
@@ -174,6 +190,10 @@ struct AdminSettingsView: View {
                             .frame(maxWidth: .infinity)
                         }
         }
+        #if os(macOS)
+        .controlSize(.small)
+        #endif
+        .jitterbugMacInsetLeadingScrollableForm()
     }
 
     /// Whole dollars as `$50`; otherwise `$50.50` (stepper still changes by 50¢).

@@ -38,6 +38,10 @@ struct ContentView: View {
                 }
             )
             .environmentObject(auth)
+            #if os(macOS)
+            // Sheet + Form in system Dark Mode often yields illegible grey-on-grey; use light chrome for admin.
+            .preferredColorScheme(.light)
+            #endif
         }
         #if os(iOS)
         .fullScreenCover(isPresented: $showAdminHub) {
@@ -62,6 +66,11 @@ struct ContentView: View {
             }
         )
         .environmentObject(auth)
+        #if os(macOS)
+        // Shorter than the main app window so the admin sheet feels lighter; still scrolls inside tabs.
+        .frame(minWidth: 920, maxWidth: 1280, minHeight: 480, maxHeight: 680)
+        .preferredColorScheme(.light)
+        #endif
     }
 
     private func openAdmin() {

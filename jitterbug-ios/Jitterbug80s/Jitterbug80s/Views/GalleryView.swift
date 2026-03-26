@@ -43,6 +43,7 @@ struct GalleryView: View {
             .task { await loadPhotos(showFullScreenSpinner: true) }
             .refreshable { await loadPhotos(showFullScreenSpinner: false) }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     private func loadPhotos(showFullScreenSpinner: Bool) async {
@@ -93,6 +94,9 @@ struct GalleryView: View {
             .padding(32)
             .frame(maxWidth: .infinity)
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
     }
 
     private var photoGrid: some View {
@@ -130,6 +134,9 @@ struct GalleryView: View {
             }
             .padding()
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
     }
 
     private var imageLoadFailedPlaceholder: some View {

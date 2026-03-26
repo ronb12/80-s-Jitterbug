@@ -17,6 +17,11 @@ struct Jitterbug80sMacApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(auth)
+                .frame(minWidth: 720, minHeight: 640)
+        }
+        .defaultSize(width: 980, height: 820)
+        .commands {
+            JitterbugMacApplicationCommands()
         }
     }
 }

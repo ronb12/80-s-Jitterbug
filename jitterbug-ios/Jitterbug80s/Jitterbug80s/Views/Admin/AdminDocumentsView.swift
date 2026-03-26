@@ -216,9 +216,11 @@ struct AdminDocumentsView: View {
                     Text("Policies & terms")
                 }
             }
+            .jitterbugMacListTightUnderNavigationTitle()
             .navigationTitle("Documents")
             .task { load() }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     private var sampleContractPreview: some View {

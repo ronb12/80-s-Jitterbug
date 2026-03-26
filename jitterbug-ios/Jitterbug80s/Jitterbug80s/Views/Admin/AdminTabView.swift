@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 private let adminTipsKey = "adminTipsShown"
 private let tabAccent = Color(red: 0.93, green: 0.28, blue: 0.6)
@@ -44,6 +47,9 @@ struct AdminTabView: View {
                 .tag(6)
         }
         .tint(tabAccent)
+        #if os(macOS)
+        .jitterbugMacNavigationRootFill()
+        #endif
         .toolbar {
             #if os(iOS)
             ToolbarItem(placement: .topBarLeading) {
@@ -71,7 +77,14 @@ struct AdminTabView: View {
                 UserDefaults.standard.set(true, forKey: adminTipsKey)
                 showAdminTips = false
             })
+            #if os(macOS)
+            .preferredColorScheme(.light)
+            #endif
         }
+        #if os(macOS)
+        // Helps TabView / toolbar pick up window-appropriate backgrounds with forced light scheme above.
+        .background(Color(nsColor: .windowBackgroundColor))
+        #endif
     }
 
     @ViewBuilder
@@ -105,6 +118,7 @@ struct AdminTipsSheet: View {
                     Text("Quick tips")
                 }
             }
+            .jitterbugMacListTightUnderNavigationTitle()
             .navigationTitle("Admin tips")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -112,5 +126,7 @@ struct AdminTipsSheet: View {
                 }
             }
         }
+        .jitterbugMacNavigationRootFill()
+        .jitterbugMacSheetChromeIfNeeded()
     }
 }

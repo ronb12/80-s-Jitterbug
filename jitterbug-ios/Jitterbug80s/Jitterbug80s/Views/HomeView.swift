@@ -81,6 +81,9 @@ struct HomeView: View {
                 }
                 .padding(.bottom, 32)
             }
+            #if os(macOS)
+            .jitterbugMacFlushScrollContentMargins()
+            #endif
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -95,6 +98,7 @@ struct HomeView: View {
                 loading = false
             }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     private var navTitleWithDiamonds: some View {

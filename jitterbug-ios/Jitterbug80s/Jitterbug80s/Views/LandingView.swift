@@ -44,69 +44,19 @@ struct LandingView: View {
             retroGridOverlay
             vignetteOverlay
 
-            VStack(spacing: 36) {
-                Spacer()
-                VStack(spacing: 8) {
-                    if let first = ownerFirstName, !first.isEmpty {
-                        Text("\(first)'s")
-                            .font(.custom("SnellRoundhand-Bold", size: 26))
-                            .foregroundStyle(.white.opacity(0.9))
-                            .opacity(titleOpacity)
-                    }
-                    diamondTitle
+            Group {
+                #if os(macOS)
+                ScrollView(.vertical, showsIndicators: true) {
+                    landingMainStack
+                        .padding(.top, 28)
+                        .padding(.bottom, 40)
+                        .frame(maxWidth: .infinity)
                 }
-                VStack(spacing: 16) {
-                    Text("Retro Photo Booth")
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.white.opacity(0.95), .white.opacity(0.75)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .opacity(subtitleOpacity)
-                    neonLine
-                    decorativeDiamondLine
-                }
-                Spacer()
-                VStack(spacing: 14) {
-                    Button(action: onEnter) {
-                        Text("Enter")
-                            .font(.headline.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(
-                                LinearGradient(
-                                    colors: [landingPink, landingPink.opacity(0.88)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .foregroundStyle(.white)
-                            .clipShape(Capsule())
-                            .shadow(color: landingPink.opacity(0.6), radius: 14, x: 0, y: 4)
-                            .overlay(
-                                Capsule()
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [Color.white.opacity(0.4), Color.white.opacity(0.15)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1
-                                    )
-                                    .padding(1)
-                            )
-                    }
-                    .scaleEffect(buttonScale)
-                    .opacity(buttonOpacity)
-                    Text("Serving Augusta, GA & surrounding areas")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.5))
-                }
-                .padding(.horizontal, 48)
-                .padding(.bottom, 52)
+                .jitterbugMacNavigationRootFill()
+                .jitterbugMacFlushScrollContentMargins()
+                #else
+                landingMainStack
+                #endif
             }
         }
         .task {
@@ -124,6 +74,83 @@ struct LandingView: View {
                 diamondScale = 1.15
                 diamondOpacity = 1
             }
+        }
+    }
+
+    /// Shared landing content; macOS wraps this in `ScrollView` so short windows can still reach **Enter**.
+    @ViewBuilder
+    private var landingMainStack: some View {
+        VStack(spacing: 36) {
+            #if os(macOS)
+            Spacer(minLength: 24)
+            #else
+            Spacer()
+            #endif
+            VStack(spacing: 8) {
+                if let first = ownerFirstName, !first.isEmpty {
+                    Text("\(first)'s")
+                        .font(.custom("SnellRoundhand-Bold", size: 26))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .opacity(titleOpacity)
+                }
+                diamondTitle
+            }
+            VStack(spacing: 16) {
+                Text("Retro Photo Booth")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.white.opacity(0.95), .white.opacity(0.75)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .opacity(subtitleOpacity)
+                neonLine
+                decorativeDiamondLine
+            }
+            #if os(macOS)
+            Spacer(minLength: 24)
+            #else
+            Spacer()
+            #endif
+            VStack(spacing: 14) {
+                Button(action: onEnter) {
+                    Text("Enter")
+                        .font(.headline.weight(.bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(
+                            LinearGradient(
+                                colors: [landingPink, landingPink.opacity(0.88)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .clipShape(Capsule())
+                        .shadow(color: landingPink.opacity(0.6), radius: 14, x: 0, y: 4)
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.4), Color.white.opacity(0.15)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                                .padding(1)
+                        )
+                }
+                .scaleEffect(buttonScale)
+                .opacity(buttonOpacity)
+                Text("Serving Augusta, GA & surrounding areas")
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+            .padding(.horizontal, 48)
+            .padding(.bottom, 52)
         }
     }
 

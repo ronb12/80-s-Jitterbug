@@ -28,10 +28,16 @@ struct MainTabView: View {
             BookView()
                 .tabItem { Label("Book", systemImage: "calendar.badge.plus") }
                 .tag(3)
+            CustomerPortalView()
+                .tabItem { Label("Portal", systemImage: "person.crop.circle.fill") }
+                .tag(4)
             MoreView(onOpenAdmin: onOpenAdmin, isAdmin: isAdmin, onSelectTab: { selectedTab = $0 })
                 .tabItem { Label("More", systemImage: "ellipsis.circle.fill") }
-                .tag(4)
+                .tag(5)
         }
         .tint(tabAccent)
+        #if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
     }
 }

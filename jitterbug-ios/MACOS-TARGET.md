@@ -22,7 +22,7 @@ Apple uses the **`maccatalyst.`** prefix for the Mac binary. It still appears un
 ### What to do in Xcode
 
 - **Team:** same as iOS (`Jitterbug80s` target).
-- **Signing:** target **Jitterbug80sMac** uses **`Jitterbug80s/Jitterbug80s.entitlements`** (same entitlements file as iOS) so capabilities stay aligned.
+- **Signing:** target **Jitterbug80sMac** uses **`Jitterbug80sMac-Debug.entitlements`** (Debug) and **`Jitterbug80sMac-Release.entitlements`** (Release): Mac sandbox + network + user-selected read-write + push (`aps-environment` development vs production). The iOS target uses **`Jitterbug80s.entitlements`** (lighter; no sandbox in the same way).
 - **Scheme:** **`Jitterbug80sMac`** → destination **My Mac (Mac Catalyst)** for local runs.
 - **Archive for Mac:** archive **Jitterbug80sMac** (or the main **Jitterbug80s** target if you distribute iOS + Mac from one target). In Organizer, distribute; App Store Connect will attach the Mac build to your **existing** app when Catalyst is enabled on the App ID.
 

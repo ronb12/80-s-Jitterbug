@@ -63,6 +63,11 @@ struct AdminPackagesView: View {
                             .onDelete(perform: deletePackages)
                         }
                     }
+                    .jitterbugMacListTightUnderNavigationTitle()
+                    #if os(macOS)
+                    .padding(.leading, 8)
+                    .padding(.trailing, 36)
+                    #endif
                 }
             }
             .navigationTitle("Packages")
@@ -87,6 +92,7 @@ struct AdminPackagesView: View {
                 Text(saveError ?? "")
             }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     private func addPackage() {
@@ -177,6 +183,10 @@ private struct AdminPackageEditView: View {
                 Text("These lines appear under the package for customers (e.g. \"3 hours of booth time\", \"Unlimited prints\"). Leave empty to use default text by package name.")
             }
         }
+        #if os(macOS)
+        .controlSize(.small)
+        #endif
+        .jitterbugMacInsetLeadingScrollableForm()
         .navigationTitle(package.name.isEmpty ? "Edit package" : package.name)
     }
 

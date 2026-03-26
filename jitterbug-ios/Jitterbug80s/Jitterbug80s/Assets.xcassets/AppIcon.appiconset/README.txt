@@ -5,4 +5,10 @@ App Store requires a 1024×1024 px app icon (no transparency, PNG or JPEG).
 3. Place it in this folder (AppIcon.appiconset) next to Contents.json.
 4. In Xcode, the AppIcon asset will show the icon; build and archive for submission.
 
-If you only provide this single 1024×1024 image, Xcode can generate other sizes for the app. For macOS/visionOS, add matching icons to the mac/tinted/dark slots if you ship on those platforms.
+For **macOS** in this catalog, **AppIcon-512.png** must be exactly **512×512** (Mac 1×); **AppIcon-1024.png** is **1024×1024** for Mac 2× and iOS. After editing the master, run:
+
+  ./generate-app-icons.sh
+
+(or: `sips -z 512 512 AppIcon-1024.png --out AppIcon-512.png` in this folder.)
+
+Commit **both** PNGs — a missing 512 file breaks validation (Xcode may still complain about the 1024 file for the 1× slot).

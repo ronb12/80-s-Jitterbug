@@ -115,9 +115,11 @@ struct MoreView: View {
                     .padding(.vertical, 8)
                 }
             }
+            .jitterbugMacListTightUnderNavigationTitle()
             .navigationTitle("More")
             .task { siteSettings = await SettingsService().getSiteSettings() }
         }
+        .jitterbugMacNavigationRootFill()
     }
 }
 
@@ -132,6 +134,7 @@ struct FAQView: View {
             FAQRow(q: "Custom branding?", a: "Yes. Standard and VIP packages include custom branding on prints.")
             FAQRow(q: "Minimum rental period?", a: "We generally recommend at least 3 hours. Shorter events can be discussed.")
         }
+        .jitterbugMacListTightUnderNavigationTitle()
         .navigationTitle("FAQ")
     }
 }
@@ -159,6 +162,9 @@ struct LegalTextView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
         .navigationTitle(title)
     }
 }
@@ -315,6 +321,9 @@ struct AboutView: View {
             }
             .padding()
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
         .navigationTitle("About")
     }
 
@@ -409,6 +418,9 @@ struct ContactView: View {
             }
             .padding()
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
         .navigationTitle("Contact Us")
     }
 

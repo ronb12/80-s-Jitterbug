@@ -96,6 +96,7 @@ struct AdminBookingsView: View {
                         }
                     }
                     .searchable(text: $searchText, prompt: "Name, email, phone, ref, location")
+                    .jitterbugMacListTightUnderNavigationTitle()
                 }
             }
             .navigationTitle("Bookings")
@@ -121,6 +122,7 @@ struct AdminBookingsView: View {
             }
             .task { load() }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     private var bookingStatsView: some View {
@@ -216,71 +218,87 @@ struct AdminAddBookingSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Client") {
-                    TextField("Name", text: $form.name)
-                    TextField("Email", text: $form.email)
-                        #if os(iOS)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        #endif
-                    TextField("Phone", text: $form.phone)
-                        #if os(iOS)
-                        .keyboardType(.phonePad)
-                        #endif
-                }
-                Section("Event") {
-                    Picker("Event type", selection: $form.eventType) {
-                        Text("Select…").tag("")
-                        ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
-                    }
-                    DatePicker("Event date", selection: Binding(
-                        get: { Self.dateFromString(form.eventDate) ?? Date() },
-                        set: { form.eventDate = Self.stringFromDate($0) }
-                    ), displayedComponents: .date)
-                    TextField("Event location", text: $form.eventLocation)
-                    TextField("Full address", text: $form.eventAddress)
-                }
-                Section("Package") {
-                    Picker("Package", selection: $form.package) {
-                        Text("Select…").tag("")
-                        ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
+            addBookingForm
+                .jitterbugMacInsetLeadingScrollableForm()
+                .navigationTitle("Add booking")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Add") { add() }
+                            .disabled(!isValid || adding)
                     }
                 }
-                Section("Message") {
+                .task {
+                    eventTypes = await EventTypesService().getEventTypes()
+                    packages = await PackagesService().getPackages()
+                    if form.eventType.isEmpty, let f = eventTypes.first { form.eventType = f }
+                    if form.package.isEmpty, let p = packages.first { form.package = p.id }
+                }
+        }
+        .jitterbugMacNavigationRootFill()
+        .jitterbugMacSheetChromeIfNeeded()
+    }
+
+    private var addBookingForm: some View {
+        Form {
+            Section("Client") {
+                TextField("Name", text: $form.name)
+                TextField("Email", text: $form.email)
                     #if os(iOS)
-                    TextField("Additional details", text: $form.message, axis: .vertical)
-                        .lineLimit(2...4)
-                    #else
-                    TextField("Additional details", text: $form.message)
-                        .lineLimit(4)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
                     #endif
+                TextField("Phone", text: $form.phone)
+                    #if os(iOS)
+                    .keyboardType(.phonePad)
+                    #endif
+            }
+            Section("Event") {
+                Picker("Event type", selection: $form.eventType) {
+                    Text("Select…").tag("")
+                    ForEach(eventTypes, id: \.self) { Text($0).tag($0) }
                 }
-                Section {
-                    Toggle("Photo release consent", isOn: $form.photoReleaseConsent)
-                    if form.photoReleaseConsent {
-                        Toggle("Includes minors", isOn: $form.photoReleaseIncludesMinors)
-                    }
-                }
-                if let err = error {
-                    Section { Text(err).foregroundStyle(.red) }
+                DatePicker("Event date", selection: Binding(
+                    get: { Self.dateFromString(form.eventDate) ?? Date() },
+                    set: { form.eventDate = Self.stringFromDate($0) }
+                ), displayedComponents: .date)
+                #if os(macOS)
+                .datePickerStyle(.compact)
+                #endif
+                TextField("Event location", text: $form.eventLocation)
+                TextField("Full address", text: $form.eventAddress)
+            }
+            Section("Package") {
+                Picker("Package", selection: $form.package) {
+                    Text("Select…").tag("")
+                    ForEach(packages, id: \.id) { Text($0.name).tag($0.id) }
                 }
             }
-            .navigationTitle("Add booking")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: onDismiss) }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { add() }
-                        .disabled(!isValid || adding)
+            Section("Message") {
+                #if os(iOS)
+                TextField("Additional details", text: $form.message, axis: .vertical)
+                    .lineLimit(2...4)
+                #elseif os(macOS)
+                TextField("Additional details", text: $form.message)
+                    .lineLimit(2...4)
+                #else
+                TextField("Additional details", text: $form.message)
+                    .lineLimit(4)
+                #endif
+            }
+            Section {
+                Toggle("Photo release consent", isOn: $form.photoReleaseConsent)
+                if form.photoReleaseConsent {
+                    Toggle("Includes minors", isOn: $form.photoReleaseIncludesMinors)
                 }
             }
-            .task {
-                eventTypes = await EventTypesService().getEventTypes()
-                packages = await PackagesService().getPackages()
-                if form.eventType.isEmpty, let f = eventTypes.first { form.eventType = f }
-                if form.package.isEmpty, let p = packages.first { form.package = p.id }
+            if let err = error {
+                Section { Text(err).foregroundStyle(.red) }
             }
         }
+        #if os(macOS)
+        .controlSize(.small)
+        #endif
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -392,6 +410,9 @@ struct AdminBookingDetailView: View {
                             get: { DetailView.dateFromString(editForm.eventDate) ?? Date() },
                             set: { editForm.eventDate = DetailView.stringFromDate($0) }
                         ), displayedComponents: .date)
+                        #if os(macOS)
+                        .datePickerStyle(.compact)
+                        #endif
                         TextField("Event location", text: $editForm.eventLocation)
                         TextField("Full address", text: $editForm.eventAddress)
                     }
@@ -403,6 +424,9 @@ struct AdminBookingDetailView: View {
                     Section("Message") {
                         #if os(iOS)
                         TextField("Details", text: $editForm.message, axis: .vertical)
+                            .lineLimit(2...4)
+                        #elseif os(macOS)
+                        TextField("Details", text: $editForm.message)
                             .lineLimit(2...4)
                         #else
                         TextField("Details", text: $editForm.message)
@@ -506,6 +530,10 @@ struct AdminBookingDetailView: View {
                     }
                 }
             }
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            .jitterbugMacInsetLeadingScrollableForm()
             .navigationTitle(booking.name)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -548,6 +576,8 @@ struct AdminBookingDetailView: View {
                 stripePublishableKey = s.stripeMode == "live" ? s.stripePublishableKeyLive : s.stripePublishableKeyTest
             }
         }
+        .jitterbugMacNavigationRootFill()
+        .jitterbugMacSheetChromeIfNeeded()
     }
 
     private func openStripeDepositCheckout() {

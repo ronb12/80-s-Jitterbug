@@ -156,6 +156,9 @@ struct BookingLookupView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
         .background(groupedScrollBackground)
         .navigationTitle("Booking Lookup")
         #if os(iOS)

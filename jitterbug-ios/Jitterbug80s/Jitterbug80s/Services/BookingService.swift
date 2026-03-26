@@ -11,6 +11,30 @@ final class BookingService {
         return ""
     }
 
+    private static func parseBooking(_ doc: QueryDocumentSnapshot) -> Booking {
+        let d = doc.data()
+        return Booking(
+            id: doc.documentID,
+            name: d["name"] as? String ?? "",
+            email: d["email"] as? String ?? "",
+            phone: d["phone"] as? String ?? "",
+            eventType: d["eventType"] as? String ?? "",
+            eventDate: d["eventDate"] as? String ?? "",
+            eventLocation: d["eventLocation"] as? String ?? "",
+            eventAddress: d["eventAddress"] as? String ?? "",
+            package: d["package"] as? String ?? "",
+            message: d["message"] as? String ?? "",
+            photoReleaseConsent: (d["photoReleaseConsent"] as? Bool) ?? false,
+            photoReleaseIncludesMinors: (d["photoReleaseIncludesMinors"] as? Bool) ?? false,
+            status: BookingStatus(rawValue: d["status"] as? String ?? "pending") ?? .pending,
+            bookingRef: d["bookingRef"] as? String ?? "",
+            createdAt: Self.isoString(from: d["createdAt"]),
+            updatedAt: Self.isoString(from: d["updatedAt"]),
+            depositPaid: d["depositPaid"] as? Bool,
+            balancePaid: d["balancePaid"] as? Bool
+        )
+    }
+
     func generateBookingRef() -> String {
         "JB-\(1000 + Int.random(in: 0..<9000))"
     }
@@ -19,7 +43,7 @@ final class BookingService {
         let ref = generateBookingRef()
         let data: [String: Any] = [
             "name": form.name.trimmingCharacters(in: .whitespacesAndNewlines),
-            "email": form.email.trimmingCharacters(in: .whitespacesAndNewlines),
+            "email": form.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
             "phone": form.phone.trimmingCharacters(in: .whitespacesAndNewlines),
             "eventType": form.eventType,
             "eventDate": form.eventDate,
@@ -76,29 +100,20 @@ final class BookingService {
         let snap = try await db.collection(collectionId)
             .order(by: "createdAt", descending: true)
             .getDocuments()
-        return snap.documents.map { doc in
-            let d = doc.data()
-            return Booking(
-                id: doc.documentID,
-                name: d["name"] as? String ?? "",
-                email: d["email"] as? String ?? "",
-                phone: d["phone"] as? String ?? "",
-                eventType: d["eventType"] as? String ?? "",
-                eventDate: d["eventDate"] as? String ?? "",
-                eventLocation: d["eventLocation"] as? String ?? "",
-                eventAddress: d["eventAddress"] as? String ?? "",
-                package: d["package"] as? String ?? "",
-                message: d["message"] as? String ?? "",
-                photoReleaseConsent: (d["photoReleaseConsent"] as? Bool) ?? false,
-                photoReleaseIncludesMinors: (d["photoReleaseIncludesMinors"] as? Bool) ?? false,
-                status: BookingStatus(rawValue: d["status"] as? String ?? "pending") ?? .pending,
-                bookingRef: d["bookingRef"] as? String ?? "",
-                createdAt: Self.isoString(from: d["createdAt"]),
-                updatedAt: Self.isoString(from: d["updatedAt"]),
-                depositPaid: d["depositPaid"] as? Bool,
-                balancePaid: d["balancePaid"] as? Bool
-            )
-        }
+        return snap.documents.map(Self.parseBooking)
+    }
+
+    @discardableResult
+    func observeBookingsForCustomer(email: String, onChange: @escaping ([Booking]) -> Void) -> ListenerRegistration {
+        let normalized = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return db.collection(collectionId)
+            .whereField("email", isEqualTo: normalized)
+            .addSnapshotListener { snap, _ in
+                let list = (snap?.documents ?? [])
+                    .map(Self.parseBooking)
+                    .sorted { $0.eventDate > $1.eventDate }
+                onChange(list)
+            }
     }
 
     func getBookingStatusByRef(_ ref: String) async -> BookingStatusPublic? {

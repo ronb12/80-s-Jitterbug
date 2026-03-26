@@ -18,6 +18,10 @@ final class AuthService: ObservableObject {
     private var authStateListener: AuthStateDidChangeListenerHandle?
     @Published var currentUser: User?
     @Published var isAdmin: Bool = false
+    private let adminEmailAllowlist: Set<String> = [
+        "sbowie207@gmail.com",
+        "apple@123.com"
+    ]
 
     /// "Apple" when logged-in email contains "apple" (e.g. apple@123.com); nil otherwise. Use for admin welcome.
     var adminGreetingName: String? {
@@ -34,11 +38,12 @@ final class AuthService: ObservableObject {
         }
         let auth = FirebaseManager.shared.auth
         currentUser = auth.currentUser
-        isAdmin = currentUser != nil
+        isAdmin = isAdminUser(currentUser)
         authStateListener = auth.addStateDidChangeListener { [weak self] _, user in
             self?.currentUser = user
-            self?.isAdmin = user != nil
-            if user != nil {
+            let admin = self?.isAdminUser(user) ?? false
+            self?.isAdmin = admin
+            if admin {
                 Task {
                     await PushNotificationService.shared.registerAdminDeviceIfPossible()
                 }
@@ -60,9 +65,13 @@ final class AuthService: ObservableObject {
             withEmail: email.trimmingCharacters(in: .whitespacesAndNewlines),
             password: password
         )
-        await MainActor.run { self.isAdmin = true }
-        // Auth listener also triggers admin FCM registration; explicit call covers edge cases.
-        await PushNotificationService.shared.registerAdminDeviceIfPossible()
+        await MainActor.run {
+            self.isAdmin = self.isAdminUser(self.currentUser)
+        }
+        if isAdmin {
+            // Auth listener also triggers admin FCM registration; explicit call covers edge cases.
+            await PushNotificationService.shared.registerAdminDeviceIfPossible()
+        }
     }
 
     func signOut() async throws {
@@ -81,5 +90,11 @@ final class AuthService: ObservableObject {
             self.currentUser = nil
             self.isAdmin = false
         }
+    }
+
+    private func isAdminUser(_ user: User?) -> Bool {
+        guard let email = user?.email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+              !email.isEmpty else { return false }
+        return adminEmailAllowlist.contains(email)
     }
 }

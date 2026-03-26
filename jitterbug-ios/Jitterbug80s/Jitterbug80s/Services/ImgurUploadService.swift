@@ -1,10 +1,19 @@
 import Foundation
 
 /// Uploads images to ImgBB (free) and returns a public URL. No Firebase Storage required.
-/// API key is read from Info: ImgbbApiKey. Get one at https://api.imgbb.com/
+/// API key: set Xcode **User-Defined** build setting `IMGBB_API_KEY` (injected as `ImgbbApiKey` in Info.plist),
+/// or override at launch with environment variable `IMGBB_API_KEY`. Get a key at https://api.imgbb.com/
 enum ImgurUploadService {
     private static var apiKey: String? {
-        Bundle.main.object(forInfoDictionaryKey: "ImgbbApiKey") as? String
+        if let env = ProcessInfo.processInfo.environment["IMGBB_API_KEY"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !env.isEmpty {
+            return env
+        }
+        if let plist = Bundle.main.object(forInfoDictionaryKey: "ImgbbApiKey") as? String {
+            let trimmed = plist.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        return nil
     }
 
     /// Upload image data to ImgBB; returns the direct image URL.
@@ -50,7 +59,7 @@ enum ImgurUploadService {
         var errorDescription: String? {
             switch self {
             case .missingApiKey:
-                return "ImgBB API key not set. Add ImgbbApiKey in Target → Info."
+                return "ImgBB API key not set. In Xcode: Target → Build Settings → add User-Defined IMGBB_API_KEY, or set env IMGBB_API_KEY in the scheme (do not commit keys)."
             case .invalidResponse:
                 return "Invalid response from ImgBB."
             case .uploadFailed(let msg):

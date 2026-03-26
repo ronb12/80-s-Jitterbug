@@ -12,6 +12,15 @@ struct BookView: View {
     /// Opt-in: register this device for a push when the deposit is paid (requires notification permission).
     @State private var notifyWhenDepositPaid = false
 
+    /// Slightly smaller on macOS so the Book form fits better in the window.
+    private var bookingNotifyFootnoteFont: Font {
+        #if os(macOS)
+        .caption2
+        #else
+        .caption
+        #endif
+    }
+
     private var isValid: Bool {
         !form.name.trimmingCharacters(in: .whitespaces).isEmpty
             && !form.email.trimmingCharacters(in: .whitespaces).isEmpty
@@ -35,6 +44,7 @@ struct BookView: View {
                     _ = await (types, pkgs)
                 }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     @ViewBuilder
@@ -70,6 +80,9 @@ struct BookView: View {
                     get: { Self.dateFromString(form.eventDate) ?? Date() },
                     set: { form.eventDate = Self.stringFromDate($0) }
                 ), displayedComponents: .date)
+                #if os(macOS)
+                .datePickerStyle(.compact)
+                #endif
                 TextField("Event location (city/venue)", text: $form.eventLocation)
                 TextField("Full address", text: $form.eventAddress)
             }
@@ -83,6 +96,9 @@ struct BookView: View {
                 #if os(iOS)
                 TextField("Additional details", text: $form.message, axis: .vertical)
                     .lineLimit(3...6)
+                #elseif os(macOS)
+                TextField("Additional details", text: $form.message)
+                    .lineLimit(2...4)
                 #else
                 TextField("Additional details", text: $form.message)
                     .lineLimit(4)
@@ -97,7 +113,7 @@ struct BookView: View {
             Section {
                 Toggle("Notify me on this device when my deposit payment is received", isOn: $notifyWhenDepositPaid)
                 Text("Optional. We’ll ask for notification permission after you submit. Your booking reference is used to verify this device — we don’t expose tokens in the public booking form.")
-                    .font(.caption)
+                    .font(bookingNotifyFootnoteFont)
                     .foregroundStyle(.secondary)
             }
 
@@ -116,6 +132,10 @@ struct BookView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        #if os(macOS)
+        .controlSize(.small)
+        #endif
+        .jitterbugMacInsetLeadingScrollableForm()
     }
 
     private func loadEventTypes() async {

@@ -1,4 +1,5 @@
 import SwiftUI
+import FirebaseFirestore
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -50,6 +51,7 @@ struct PackagesView: View {
     var onRequestQuote: (() -> Void)?
     @State private var packages: [PackagePrice] = []
     @State private var loading = true
+    @State private var packagesListener: ListenerRegistration?
 
     private func features(for pkg: PackagePrice) -> [String] {
         if !pkg.features.isEmpty { return pkg.features }
@@ -120,6 +122,9 @@ struct PackagesView: View {
                         }
                         .padding()
                     }
+                    #if os(macOS)
+                    .jitterbugMacFlushScrollContentMargins()
+                    #endif
                 }
             }
             .navigationTitle("Packages & Pricing")
@@ -127,7 +132,29 @@ struct PackagesView: View {
                 packages = await PackagesService().getPackages()
                 loading = false
             }
+            .onAppear {
+                startPackagesListener()
+            }
+            .onDisappear {
+                stopPackagesListener()
+            }
         }
+        .jitterbugMacNavigationRootFill()
+    }
+
+    private func startPackagesListener() {
+        stopPackagesListener()
+        packagesListener = PackagesService().observePackages { nextPackages in
+            DispatchQueue.main.async {
+                packages = nextPackages
+                loading = false
+            }
+        }
+    }
+
+    private func stopPackagesListener() {
+        packagesListener?.remove()
+        packagesListener = nil
     }
 
     private func packageCard(pkg: PackagePrice, highlighted: Bool, featureList: [String]) -> some View {

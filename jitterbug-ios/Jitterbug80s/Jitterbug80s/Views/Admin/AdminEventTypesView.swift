@@ -34,6 +34,7 @@ struct AdminEventTypesView: View {
                     Text(saveError ?? "")
                 }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     @ViewBuilder
@@ -79,6 +80,7 @@ struct AdminEventTypesView: View {
                 .onDelete(perform: delete)
             }
         }
+        .jitterbugMacListTightUnderNavigationTitle()
     }
 
     private func addType() {

@@ -40,6 +40,15 @@ This runs **`drizzle-kit push`** against `src/lib/db/schema.ts`.
 npm run db:verify
 ```
 
+**Seed test admin rows** (emails only — passwords stay in Firebase; run after `users` exists):
+
+```bash
+# From jitterbug-site/ with DATABASE_URL set:
+psql "$DATABASE_URL" -f scripts/sql/seed-test-admin-users.sql
+```
+
+Or paste `scripts/sql/seed-test-admin-users.sql` into the **Neon SQL Editor**.
+
 **Neon CLI** (auth, connection string, `psql` table list): **`NEON-CLI.md`**
 
 ## 3. Migrate data from Firestore (optional)

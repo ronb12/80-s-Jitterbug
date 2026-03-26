@@ -22,5 +22,13 @@ final class FirebaseManager {
         }
         FirebaseApp.configure()
         Self._isConfigured = true
+
+        #if os(macOS) || targetEnvironment(simulator)
+        // Native Mac and iOS Simulator: avoid persistent LevelDB cache writes.
+        // This prevents lock/disk-write crashes when local disk is constrained.
+        let firestoreSettings = FirestoreSettings()
+        firestoreSettings.cacheSettings = MemoryCacheSettings()
+        Firestore.firestore().settings = firestoreSettings
+        #endif
     }
 }

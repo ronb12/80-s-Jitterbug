@@ -45,14 +45,21 @@ struct AdminGalleryView: View {
                                 #endif
                             }
                         }
+                        #if os(macOS)
+                        .controlSize(.small)
+                        #endif
+                        .jitterbugMacInsetLeadingScrollableForm()
                         .navigationTitle("Edit caption")
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editingPhoto = nil } }
                             ToolbarItem(placement: .confirmationAction) { Button("Save") { saveCaption(photo) } }
                         }
                     }
+                    .jitterbugMacNavigationRootFill()
+                    .jitterbugMacSheetChromeIfNeeded()
                 }
         }
+        .jitterbugMacNavigationRootFill()
     }
 
     @ViewBuilder
@@ -133,6 +140,7 @@ struct AdminGalleryView: View {
                 }
             }
         }
+        .jitterbugMacListTightUnderNavigationTitle()
     }
 
     private func saveCaption(_ photo: GalleryPhoto) {

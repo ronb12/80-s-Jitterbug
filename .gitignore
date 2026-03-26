@@ -14,6 +14,8 @@ build
 *.xcuserstate
 **/DerivedData/
 jitterbug-ios/**/build/
+# Local Xcode secrets (optional xcconfig with IMGBB_API_KEY, etc.)
+jitterbug-ios/**/Secrets.xcconfig
 
 # Misc
 *.bak

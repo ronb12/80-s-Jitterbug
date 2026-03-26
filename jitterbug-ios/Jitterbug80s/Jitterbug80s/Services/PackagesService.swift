@@ -11,26 +11,39 @@ final class PackagesService {
         .init(id: "vip", name: "VIP", price: "$649", features: [])
     ]
 
+    private static func parsePackages(from data: [String: Any]?) -> [PackagePrice] {
+        guard let data,
+              let list = data["packages"] as? [[String: Any]] else {
+            return Self.defaultPackages
+        }
+        let parsed = list.compactMap { p in
+            let id = (p["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard !id.isEmpty else { return nil }
+            let features = (p["features"] as? [String])?.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } ?? []
+            return PackagePrice(
+                id: id,
+                name: (p["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Package",
+                price: (p["price"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+                features: features
+            )
+        }
+        return parsed.isEmpty ? Self.defaultPackages : parsed
+    }
+
     func getPackages() async -> [PackagePrice] {
         do {
             let snap = try await db.document(docPath).getDocument()
-            guard snap.exists, let data = snap.data(),
-                  let list = data["packages"] as? [[String: Any]] else {
-                return Self.defaultPackages
-            }
-            return list.compactMap { p in
-                let id = (p["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                guard !id.isEmpty else { return nil }
-                let features = (p["features"] as? [String])?.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } ?? []
-                return PackagePrice(
-                    id: id,
-                    name: (p["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Package",
-                    price: (p["price"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-                    features: features
-                )
-            }
+            return Self.parsePackages(from: snap.data())
         } catch {
             return Self.defaultPackages
+        }
+    }
+
+    @discardableResult
+    func observePackages(_ onChange: @escaping ([PackagePrice]) -> Void) -> ListenerRegistration {
+        db.document(docPath).addSnapshotListener { snap, _ in
+            let next = Self.parsePackages(from: snap?.data())
+            onChange(next)
         }
     }
 

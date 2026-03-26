@@ -102,6 +102,9 @@ struct BookingSuccessView: View {
             }
             .padding()
         }
+        #if os(macOS)
+        .jitterbugMacFlushScrollContentMargins()
+        #endif
         .task {
             let s = await SettingsService().getSiteSettings()
             stripeCheckoutEnabled = s.stripeCheckoutEnabled
