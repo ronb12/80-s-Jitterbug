@@ -40,6 +40,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={dmSans.variable}>
+      <head>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3565666509316178" crossOrigin="anonymous" />
+      </head>
       <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased">
         <Navigation />
         <main>{children}</main>
